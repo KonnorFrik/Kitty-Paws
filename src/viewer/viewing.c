@@ -20,10 +20,12 @@ void draw_mesh(paws_mesh* mesh) {
         for (size_t vi = 0; vi < indices_count; ++vi) {
             paws_face_indices* start_face = cvector_at(faces, vi);
             paws_face_indices* end_face = cvector_at(faces, vi + 1);
+
+            Vector3* start_vert = (Vector3*)cvector_at(mesh->vertices, start_face->vertex_index);
             end_vertex = (Vector3*)cvector_at(mesh->vertices, end_face->vertex_index);
 
-            DrawSphere(*(Vector3*)cvector_at(mesh->vertices, start_face->vertex_index), 0.1, BLACK);
-            DrawLine3D(*(Vector3*)cvector_at(mesh->vertices, start_face->vertex_index), *end_vertex, BLACK);
+            DrawSphere(*start_vert, 0.1, BLACK);
+            DrawLine3D(*start_vert, *end_vertex, BLACK);
         }
 
             DrawLine3D(*start_vertex, *end_vertex, BLACK);
