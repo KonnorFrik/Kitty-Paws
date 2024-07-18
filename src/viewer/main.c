@@ -65,7 +65,7 @@ int main() {
     int status = 0;
 
     int screen_width = 900;
-    int screen_height = 600;
+    int screen_height = 900;
 
     // TODO: create struct with filepath, mesh, something more to hold object
     // - Also write functions for manage this struct (load, save, unload, etc)
@@ -90,11 +90,31 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
 
+    Camera camera = {
+        .position = {.x = 0, .y = 1, .z = 4},
+        .target = {.x = 0, .y = 0, .z = 0},
+        .up = {.x = 0, .y = 1, .z = 0},
+        .fovy = 45,
+        .projection = CAMERA_PERSPECTIVE,
+    };
+
     while ( !status && !WindowShouldClose() ) {
+        if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) ) {
+            UpdateCamera(&camera, CAMERA_THIRD_PERSON);
+        }
 
         BeginDrawing();
         {
             ClearBackground(color_background);
+            BeginMode3D(camera);
+            {
+                DrawGrid(15, 10);
+
+                if ( is_mesh_loaded ) {
+                    draw_mesh(&mesh);
+                }
+            }
+            EndMode3D();
         }
         EndDrawing();
 
