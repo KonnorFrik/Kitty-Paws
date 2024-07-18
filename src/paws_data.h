@@ -12,7 +12,7 @@
  */
 typedef struct _paws_face {
     size_t vertex_index, texture_index, normal_index;
-} paws_face_indeces;
+} paws_face_indices;
 
 /**
  * @brief Hold mesh loaded from file

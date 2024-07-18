@@ -44,7 +44,7 @@ void paws_mesh_dtor(paws_mesh* mesh) {
         }
 
         for (size_t j = 0; j < cvector_size(face_indeces); ++j) {
-            paws_face_indeces* obj = cvector_at(face_indeces, j);
+            paws_face_indices* obj = cvector_at(face_indeces, j);
 
             if ( obj ) {
                 free(obj);
