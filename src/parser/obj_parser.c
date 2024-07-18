@@ -134,7 +134,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
     }
     
     while ( !status && loop ) { // parse each [...] in line
-        paws_face_indeces* indeces = calloc(1, sizeof(paws_face_indeces));
+        paws_face_indices* indeces = calloc(1, sizeof(paws_face_indices));
 
         if ( !indeces ) {
             #if PRINT_ERROR == 1
