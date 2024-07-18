@@ -4,6 +4,8 @@
 #ifndef __KITTY_PAWS_DATA_H__
 #define __KITTY_PAWS_DATA_H__
 
+// TODO: move this file to model folder
+
 #include <stddef.h>
 #include "cvector/cvector.h"
 
@@ -23,7 +25,13 @@ typedef struct _paws_mesh {
     cvector* normals;  ///< Contains pointers to Vector3
     cvector* faces;    ///< Contains pointers to cvector with pointers to paws_face_indeces
 } paws_mesh;
+// TODO: add settings to mesh or object struct
+// - render-type - wireframe, model, texture, ...
+// - Draw points as: sphere, cube
+// - Color for: points, lines
+// - Loaded and ready or not
 
 bool parse_format_obj(const char* filepath, paws_mesh* mesh);
+void draw_mesh(paws_mesh* mesh);
 
 #endif /* __KITTY_PAWS_DATA_H__ */
