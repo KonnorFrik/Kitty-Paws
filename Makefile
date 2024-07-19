@@ -14,6 +14,7 @@ SRC_DIR_PREFIX = src
 APP_SRC_DIRS = $(SRC_DIR_PREFIX)/parser
 # APP_SRC_DIRS += $(SRC_DIR_PREFIX)/raygui_impl
 APP_SRC_DIRS += $(SRC_DIR_PREFIX)/viewer
+APP_SRC_DIRS += $(SRC_DIR_PREFIX)/model
 
 APP_SRC = $(foreach src_dir, $(APP_SRC_DIRS), $(wildcard $(src_dir)/*.c))
 APP_OBJ = $(APP_SRC:.c=.o) 
