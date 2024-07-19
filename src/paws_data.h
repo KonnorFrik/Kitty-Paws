@@ -4,8 +4,6 @@
 #ifndef __KITTY_PAWS_DATA_H__
 #define __KITTY_PAWS_DATA_H__
 
-// TODO: move this file to model folder
-
 #include <stddef.h>
 #include <raylib.h>
 #include "cvector/cvector.h"
@@ -34,7 +32,6 @@ typedef struct _paws_mesh {
         enum point_type { ///< How to draw a point
             NONE, SPHERE, CUBE, 
         } point_type;
-        // TODO: add radius for point
         float point_radius; ///< How big will be a point
         Color color_point, color_line, color_normal;
     } settings;
