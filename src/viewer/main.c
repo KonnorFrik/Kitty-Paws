@@ -5,6 +5,7 @@
 #define APP_TITLE "Kitty Paws"
 
 int main() {
+    // Initialize anything here
     int status = 0;
 
     int screen_width = 900;
@@ -41,10 +42,12 @@ int main() {
     };
 
     while ( !status && !WindowShouldClose() ) {
+        // Update anything here
         if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) ) {
             UpdateCamera(&camera, CAMERA_THIRD_PERSON);
         }
 
+        // Draw anything here
         BeginDrawing();
         {
             ClearBackground(color_background);
@@ -62,8 +65,8 @@ int main() {
 
     }
 
+    // Deinitialize anything here
     CloseWindow();
-
     paws_mesh_dtor(&mesh);
 
     return status;
