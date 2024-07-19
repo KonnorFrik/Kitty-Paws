@@ -32,6 +32,7 @@ typedef struct _paws_mesh {
         enum point_type { ///< How to draw a point
             NONE, SPHERE, CUBE, 
         } point_type;
+        // TODO: add radius for point
 
         Color color_point, color_line;
     } settings;
