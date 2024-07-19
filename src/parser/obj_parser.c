@@ -74,6 +74,10 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
     fclose(file);
 
+    if ( !status ) {
+        mesh->is_loaded = true;
+    }
+
     return status;
 }
 
@@ -144,7 +148,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
             continue;
         }
 
-        if ( sscanf(copy, "%lu", &indeces->vertex_index) == 1 ) {
+        if ( sscanf(copy, "%lld", &indeces->vertex_index) == 1 ) {
             indeces->vertex_index--;
 
         } else {
@@ -166,7 +170,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
                     // indeces->texture_index--;
 
                 } else if (which_ind == 2) {
-                    if ( sscanf(copy + 1, "%lu", &indeces->normal_index) != 1 ) {
+                    if ( sscanf(copy + 1, "%lld", &indeces->normal_index) != 1 ) {
                         #if PRINT_ERROR == 1
                         fprintf(stderr, "[ERR] Can't read normal from face line\n");
                         #endif
