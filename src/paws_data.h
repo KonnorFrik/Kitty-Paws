@@ -33,7 +33,7 @@ typedef struct _paws_mesh {
             NONE, SPHERE, CUBE, 
         } point_type;
         // TODO: add radius for point
-
+        float point_radius; ///< How big will be a point
         Color color_point, color_line;
     } settings;
 } paws_mesh;

@@ -15,9 +15,11 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->textures = cvector_new(1);
     mesh->normals = cvector_new(1);
     mesh->faces = cvector_new(1);
+
     mesh->settings.point_type = SPHERE;
     mesh->settings.color_point = BLACK;
     mesh->settings.color_line = BLACK;
+    mesh->settings.point_radius = 0.1;
 
     if ( !mesh->vertices || 
          !mesh->textures || 
