@@ -8,7 +8,7 @@
 /** 
  * @brief Draw each face of a mesh (points, edges)
  * @param[in] mesh - paws_mesh object
- * @version 0.1.0
+ * @version 0.2.0
  */
 void draw_mesh(paws_mesh* mesh) {
     size_t faces_count = cvector_size(mesh->faces);

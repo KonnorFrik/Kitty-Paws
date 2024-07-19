@@ -6,7 +6,7 @@
  * @brief Allocate memory for each member of paws_mesh object
  * @param[out] mesh a paws_mesh object
  * @return status: false:OK true:ERROR
- * @version 0.1.0
+ * @version 0.2.0
  */
 bool paws_mesh_ctor(paws_mesh* mesh) {
     bool status = false;

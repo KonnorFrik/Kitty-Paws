@@ -18,6 +18,7 @@ typedef struct _paws_face {
 
 /**
  * @brief Hold mesh loaded from file
+ * @version 0.2.0
  */
 typedef struct _paws_mesh {
     cvector* vertices;     ///< Contains pointers to Vector3 
