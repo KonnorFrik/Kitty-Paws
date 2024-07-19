@@ -9,6 +9,10 @@
  */
 void draw_mesh(paws_mesh* mesh) {
     size_t faces_count = cvector_size(mesh->faces);
+    Color color_point = mesh->settings.color_point;
+    Color color_line = mesh->settings.color_line;
+    int point_type = mesh->settings.point_type;
+    float point_radius = mesh->settings.point_radius;
 
     for (size_t fi = 0; fi < faces_count; ++fi) {
         cvector* faces = cvector_at(mesh->faces, fi);
@@ -24,10 +28,21 @@ void draw_mesh(paws_mesh* mesh) {
             Vector3* start_vert = (Vector3*)cvector_at(mesh->vertices, start_face->vertex_index);
             end_vertex = (Vector3*)cvector_at(mesh->vertices, end_face->vertex_index);
 
-            DrawSphere(*start_vert, 0.1, BLACK);
-            DrawLine3D(*start_vert, *end_vertex, BLACK);
+            switch ( point_type ) {
+                default:
+                case NONE:
+                    break;
+                case SPHERE:
+                    DrawSphere(*start_vert, point_radius, color_point);
+                    break;
+                case CUBE:
+                    DrawCube(*start_vert, point_radius, point_radius, point_radius, color_point);
+                    break;
+            }
+
+            DrawLine3D(*start_vert, *end_vertex, color_line);
         }
 
-            DrawLine3D(*start_vertex, *end_vertex, BLACK);
+            DrawLine3D(*start_vertex, *end_vertex, color_line);
     }
 }
