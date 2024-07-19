@@ -10,6 +10,7 @@ int main() {
 
     int screen_width = 900;
     int screen_height = 900;
+    int target_fps = 60;
 
     // TODO: create struct with filepath, mesh, something more to hold object
     // - Also write functions for manage this struct (load, save, unload, etc)
@@ -32,6 +33,7 @@ int main() {
     // SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
+    SetTargetFPS(target_fps);
 
     Camera camera = {
         .position = {.x = 0, .y = 1, .z = 4},
@@ -53,7 +55,7 @@ int main() {
             ClearBackground(color_background);
             BeginMode3D(camera);
             {
-                DrawGrid(15, 10);
+                // DrawGrid(15, 10);
 
                 if ( mesh.is_loaded ) {
                     draw_mesh(&mesh);
