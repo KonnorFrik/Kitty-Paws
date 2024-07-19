@@ -22,11 +22,13 @@ typedef struct _paws_face {
  * @brief Hold mesh loaded from file
  */
 typedef struct _paws_mesh {
-    cvector* vertices; ///< Contains pointers to Vector3 
-    cvector* textures; ///< Contains pointers to Vector2
-    cvector* normals;  ///< Contains pointers to Vector3
-    cvector* faces;    ///< Contains pointers to cvector with pointers to paws_face_indeces
-    bool is_loaded;    ///< Is mesh loaded from file and ready or not
+    cvector* vertices;     ///< Contains pointers to Vector3 
+    cvector* textures;     ///< Contains pointers to Vector2
+    cvector* normals;      ///< Contains pointers to Vector3
+    cvector* faces;        ///< Contains pointers to cvector with pointers to paws_face_indeces
+    bool is_loaded;        ///< Is mesh loaded from file and ready or not
+    bool is_draw_normals;  ///< Is need to draw normals
+    bool is_draw_textures; ///< Is need to draw textures
 
     struct settings {
         enum point_type { ///< How to draw a point
@@ -34,7 +36,7 @@ typedef struct _paws_mesh {
         } point_type;
         // TODO: add radius for point
         float point_radius; ///< How big will be a point
-        Color color_point, color_line;
+        Color color_point, color_line, color_normal;
     } settings;
 } paws_mesh;
 // TODO: add settings to mesh or object struct
