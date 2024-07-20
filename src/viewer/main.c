@@ -5,11 +5,6 @@
 
 #define APP_TITLE "Kitty Paws"
 
-const char* settings_window_mode_text[] = {
-    "View Settings",
-    "Another",
-};
-
 int main() {
     // Initialize anything here
     int status = 0;
@@ -113,6 +108,11 @@ int main() {
 
                 enum _settings_mode {
                     VIEW = 0,
+                };
+
+                const char* settings_window_mode_text[] = {
+                    "View Settings",
+                    "Another",
                 };
 
                 int settings_mode = VIEW;
