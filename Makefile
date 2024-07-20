@@ -5,14 +5,14 @@ CFLAGS = -Wall -Wextra -std=c11 -pedantic
 CFLAGS += -g
 # CFLAGS += -Werror
 
-LDFLAGS = -lraylib
+LDFLAGS = -lraylib -lm
 
 CVECTOR_LIB_SRC_DIR = src/cvector
 CVECTOR_LIB_STATIC = libcvector.a
 
 SRC_DIR_PREFIX = src
 APP_SRC_DIRS = $(SRC_DIR_PREFIX)/parser
-# APP_SRC_DIRS += $(SRC_DIR_PREFIX)/raygui_impl
+APP_SRC_DIRS += $(SRC_DIR_PREFIX)/raygui_impl
 APP_SRC_DIRS += $(SRC_DIR_PREFIX)/viewer
 APP_SRC_DIRS += $(SRC_DIR_PREFIX)/model
 
