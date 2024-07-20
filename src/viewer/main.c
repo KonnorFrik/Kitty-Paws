@@ -1,8 +1,14 @@
 #include "../paws_data.h"
+#include "../raygui_impl/raygui.h"
 #include <raylib.h>
 #include <stdio.h>
 
 #define APP_TITLE "Kitty Paws"
+
+const char* settings_window_mode_text[] = {
+    "View Settings",
+    "Another",
+};
 
 int main() {
     // Initialize anything here
@@ -27,11 +33,6 @@ int main() {
 
     Color color_background = WHITE;
 
-    // SetTraceLogLevel(LOG_NONE);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(screen_width, screen_height, APP_TITLE);
-    SetTargetFPS(target_fps);
-
     Camera camera = {
         .position = {.x = 0, .y = 1, .z = 4},
         .target = {.x = 0, .y = 0, .z = 0},
@@ -40,13 +41,53 @@ int main() {
         .projection = CAMERA_PERSPECTIVE,
     };
 
+    // GUI variables
+    bool is_show_settings_window = false;
+    // Settings button
+    Rectangle gui_rect_settings_button = {0, 0, 95, 35};
+    gui_rect_settings_button.x = screen_width - gui_rect_settings_button.width;
+
+    // Settings window
+    Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
+    gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
+
+    // Inside settings window
+
+    // SetTraceLogLevel(LOG_NONE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(screen_width, screen_height, APP_TITLE);
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    SetTargetFPS(target_fps);
+
     while ( !status && !WindowShouldClose() ) {
-        // Update anything here
-        if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) ) {
+        // Update anything here ------------------
+        if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
+        ) {
             UpdateCamera(&camera, CAMERA_THIRD_PERSON);
         }
 
-        // Draw anything here
+        // Draw gui at position relative to window width && height
+        int tmp_screen_width = GetScreenWidth();
+        int tmp_screen_height = GetScreenHeight();
+        int width_diff;
+        int height_diff;
+
+        if ( (width_diff = tmp_screen_width - screen_width) ) {
+            screen_width = tmp_screen_width;
+
+            // gui_settings_window_view_btn.x += width_diff;
+            gui_rect_settings_button.x += width_diff;
+            gui_rect_settings_window.x += width_diff;
+        }
+
+        if ( (height_diff = tmp_screen_height - screen_height) ) {
+            screen_height = tmp_screen_height;
+
+            gui_rect_settings_window.height = screen_height;
+        }
+
+        // Draw anything here ------------------
         BeginDrawing();
         {
             ClearBackground(color_background);
@@ -59,6 +100,49 @@ int main() {
                 }
             }
             EndMode3D();
+
+            //Draw GUI here ------------------
+            if ( !is_show_settings_window && GuiButton(gui_rect_settings_button, "Settings") ) {
+                is_show_settings_window = !is_show_settings_window;
+            }
+
+            if ( is_show_settings_window ) {
+                if ( GuiWindowBox(gui_rect_settings_window, "Settings") ) {
+                    is_show_settings_window = false;
+                }
+
+                enum _settings_mode {
+                    VIEW = 0,
+                };
+
+                int settings_mode = VIEW;
+
+                Rectangle gui_settings_window_view_btn = {
+                    .x = gui_rect_settings_window.x + 5,
+                    .y = gui_rect_settings_window.y + 30,
+                    .width = 90,
+                    .height = 30
+                };
+                Rectangle gui_settings_line = {
+                    .x = gui_rect_settings_window.x,
+                    .y = gui_settings_window_view_btn.y + 50,
+                    .width = gui_rect_settings_window.width,
+                    .height = 0
+                };
+
+                if ( GuiButton(gui_settings_window_view_btn, "View") ) {
+                    settings_mode = VIEW;
+                }
+
+                GuiLine(gui_settings_line, settings_window_mode_text[settings_mode]);
+
+                switch ( settings_mode ) {
+                    case VIEW:
+                        break;
+                    default: break;
+                }
+            }
+
         }
         EndDrawing();
 
