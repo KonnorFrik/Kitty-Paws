@@ -1,5 +1,7 @@
 #include "../paws_data.h"
+
 #include <raylib.h>
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -72,6 +74,10 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
     fclose(file);
 
+    if ( !status ) {
+        mesh->is_loaded = true;
+    }
+
     return status;
 }
 
@@ -122,9 +128,9 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
     bool status = false;
     bool loop = true;
     char* copy = (char*)line + 2;
-    cvector* faces = cvector_new(1);
+    cvector* line_faces = cvector_new(1);
 
-    if ( !faces ) {
+    if ( !line_faces ) {
         #if PRINT_ERROR == 1
         fprintf(stderr, "[ERR] Can't allocate memory for faces\n");
         #endif
@@ -132,7 +138,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
     }
     
     while ( !status && loop ) { // parse each [...] in line
-        paws_face* indeces = calloc(1, sizeof(paws_face));
+        paws_face_indices* indeces = calloc(1, sizeof(paws_face_indices));
 
         if ( !indeces ) {
             #if PRINT_ERROR == 1
@@ -142,7 +148,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
             continue;
         }
 
-        if ( sscanf(copy, "%lu", &indeces->vertex_index) == 1 ) {
+        if ( sscanf(copy, "%lld", &indeces->vertex_index) == 1 ) {
             indeces->vertex_index--;
 
         } else {
@@ -164,7 +170,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
                     // indeces->texture_index--;
 
                 } else if (which_ind == 2) {
-                    if ( sscanf(copy + 1, "%lu", &indeces->normal_index) != 1 ) {
+                    if ( sscanf(copy + 1, "%lld", &indeces->normal_index) != 1 ) {
                         #if PRINT_ERROR == 1
                         fprintf(stderr, "[ERR] Can't read normal from face line\n");
                         #endif
@@ -180,7 +186,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
         }
 
         if ( !status ) {
-            status = cvector_push_back(faces, indeces);
+            status = cvector_push_back(line_faces, indeces);
         }
 
         if ( *copy == '\0' || *copy == '\n' ) {
@@ -196,7 +202,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
     }
 
     if ( !status ) {
-        status = cvector_push_back(mesh->faces, faces);
+        status = cvector_push_back(mesh->faces, line_faces);
     }
 
     return status;
