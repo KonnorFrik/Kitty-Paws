@@ -12,9 +12,6 @@ int main() {
     int screen_height = 900;
     int target_fps = 60;
 
-    // TODO: create struct with filepath, mesh, something more to hold object
-    // - Also write functions for manage this struct (load, save, unload, etc)
-
     // hardcoded value for testing
     char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
     paws_mesh mesh = {0};

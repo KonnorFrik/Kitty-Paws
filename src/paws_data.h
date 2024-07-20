@@ -50,6 +50,9 @@ typedef struct _paws_mesh {
 // [ ] Render materials or not ( bool var in settings )
 // [ ] Render textures or not ( bool var in settings )
 
+// TODO: create struct with filepath, mesh, something more to hold object
+// - Also write functions for manage this struct (load, save, unload, etc)
+
 // Parser related functions
 bool parse_format_obj(const char* filepath, paws_mesh* mesh);
 
