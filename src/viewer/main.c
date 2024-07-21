@@ -46,8 +46,6 @@ int main() {
     Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
     gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
 
-    // Inside settings window
-
     // SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
@@ -134,42 +132,37 @@ int main() {
 
                 // Inside view settings
                 // Point type area
-                Rectangle gui_settings_view_group_box_point_type = {
+                Rectangle gui_settings_view_line_point_type = {
                     .x = gui_rect_settings_window.x + 5,
                     .y = gui_settings_line.y + 25,
-                    .width = 110,
-                    .height = (3 * 35) + 15, // 3 buttons each with height 30
+                    .width = 130,
+                    .height = 0//(3 * 35) + 15, // 3 buttons each with height 30
                 };
-                Rectangle gui_settings_view_btn_none = {
+                Rectangle gui_settings_view_dropbox_point_type = {
                     .x = gui_rect_settings_window.x + 15,
-                    .y = gui_settings_view_group_box_point_type.y + 15,
-                    .width = 90,
-                    .height = 30
-                };
-                Rectangle gui_settings_view_btn_sphere = {
-                    .x = gui_settings_view_btn_none.x,
-                    .y = gui_settings_view_btn_none.y + 35,
-                    .width = 90,
-                    .height = 30
-                };
-                Rectangle gui_settings_view_btn_cube = {
-                    .x = gui_settings_view_btn_sphere.x,
-                    .y = gui_settings_view_btn_sphere.y + 35,
-                    .width = 90,
+                    .y = gui_settings_view_line_point_type.y + 15,
+                    .width = 110,
                     .height = 30
                 };
 
                 // Point radius area
-                Rectangle gui_settings_view_group_box_point_radius = {
-                    .x = gui_rect_settings_window.x + 130,
-                    .y = gui_settings_line.y + 25,
+                Rectangle gui_settings_view_line_point_radius = {
+                    .x = gui_settings_view_line_point_type.x + gui_settings_view_line_point_type.width + 15,
+                    .y = gui_settings_view_line_point_type.y,
                     .width = 170,
-                    .height = 45
+                    .height = 0
                 };
                 Rectangle gui_settings_view_slider_point_radius = {
-                    .x = gui_settings_view_group_box_point_radius.x + 40,
-                    .y = gui_settings_view_group_box_point_radius.y + 10,
+                    .x = gui_settings_view_line_point_radius.x + 40,
+                    .y = gui_settings_view_line_point_radius.y + 10,
                     .width = 100,
+                    .height = 30
+                };
+
+                Rectangle gui_settings_view_checkbox_edges = {
+                    .x = gui_settings_view_dropbox_point_type.x,
+                    .y = gui_settings_view_dropbox_point_type.y + 140,
+                    .width = 30,
                     .height = 30
                 };
 
@@ -182,23 +175,36 @@ int main() {
                 switch ( settings_mode ) {
                     case VIEW:
                         {
-                            GuiGroupBox(gui_settings_view_group_box_point_type, "Point type");
+                            GuiLine(gui_settings_view_line_point_type, "Point type");
 
                             // Change point type
-                            if ( GuiButton(gui_settings_view_btn_none, "None") ) {
-                                mesh.settings.point_type = NONE;
+                            static int dropbox_chosen = 1;
+                            static bool dropbox_mode = false;
+
+                            if ( GuiDropdownBox(gui_settings_view_dropbox_point_type, "None;Sphere;Cube", &dropbox_chosen, dropbox_mode) ) {
+                                dropbox_mode = !dropbox_mode;
                             }
-                            if ( GuiButton(gui_settings_view_btn_sphere, "Sphere") ) {
-                                mesh.settings.point_type = SPHERE;
-                            }
-                            if ( GuiButton(gui_settings_view_btn_cube, "Cube") ) {
-                                mesh.settings.point_type = CUBE;
+
+                            switch ( dropbox_chosen ) {
+                                case 0: // None
+                                    mesh.settings.point_type = NONE;
+                                    break;
+                                case 1: // Sphere
+                                    mesh.settings.point_type = SPHERE;
+                                    break;
+                                case 2: // Cube
+                                    mesh.settings.point_type = CUBE;
+                                    break;
+                                default: break;
                             }
 
                             // Change point radius
                             float gui_settings_point_radius_min = 0.01f, gui_settings_point_radius_max = 0.2f;
-                            GuiGroupBox(gui_settings_view_group_box_point_radius, "Point Radius");
+                            GuiLine(gui_settings_view_line_point_radius, "Point Radius");
                             GuiSlider(gui_settings_view_slider_point_radius, "0.01", "0.2", &mesh.settings.point_radius, gui_settings_point_radius_min, gui_settings_point_radius_max);
+
+                            // Draw edges switch
+                            GuiCheckBox(gui_settings_view_checkbox_edges, "Draw Edges", &mesh.is_draw_edges);
                         }
                         break;
                     default: break;
