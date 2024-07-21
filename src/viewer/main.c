@@ -108,11 +108,13 @@ int main() {
 
                 enum _settings_mode {
                     VIEW = 0,
+                    // camera,
+                    // render
                 };
 
                 const char* settings_window_mode_text[] = {
-                    "View Settings",
-                    "Another",
+                    "View",
+                    "Camera",
                 };
 
                 int settings_mode = VIEW;
@@ -130,6 +132,47 @@ int main() {
                     .height = 0
                 };
 
+                // Inside view settings
+                // Point type area
+                Rectangle gui_settings_view_group_box_point_type = {
+                    .x = gui_rect_settings_window.x + 5,
+                    .y = gui_settings_line.y + 25,
+                    .width = 110,
+                    .height = (3 * 35) + 15, // 3 buttons each with height 30
+                };
+                Rectangle gui_settings_view_btn_none = {
+                    .x = gui_rect_settings_window.x + 15,
+                    .y = gui_settings_view_group_box_point_type.y + 15,
+                    .width = 90,
+                    .height = 30
+                };
+                Rectangle gui_settings_view_btn_sphere = {
+                    .x = gui_settings_view_btn_none.x,
+                    .y = gui_settings_view_btn_none.y + 35,
+                    .width = 90,
+                    .height = 30
+                };
+                Rectangle gui_settings_view_btn_cube = {
+                    .x = gui_settings_view_btn_sphere.x,
+                    .y = gui_settings_view_btn_sphere.y + 35,
+                    .width = 90,
+                    .height = 30
+                };
+
+                // Point radius area
+                Rectangle gui_settings_view_group_box_point_radius = {
+                    .x = gui_rect_settings_window.x + 130,
+                    .y = gui_settings_line.y + 25,
+                    .width = 170,
+                    .height = 45
+                };
+                Rectangle gui_settings_view_slider_point_radius = {
+                    .x = gui_settings_view_group_box_point_radius.x + 40,
+                    .y = gui_settings_view_group_box_point_radius.y + 10,
+                    .width = 100,
+                    .height = 30
+                };
+
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
@@ -138,6 +181,25 @@ int main() {
 
                 switch ( settings_mode ) {
                     case VIEW:
+                        {
+                            GuiGroupBox(gui_settings_view_group_box_point_type, "Point type");
+
+                            // Change point type
+                            if ( GuiButton(gui_settings_view_btn_none, "None") ) {
+                                mesh.settings.point_type = NONE;
+                            }
+                            if ( GuiButton(gui_settings_view_btn_sphere, "Sphere") ) {
+                                mesh.settings.point_type = SPHERE;
+                            }
+                            if ( GuiButton(gui_settings_view_btn_cube, "Cube") ) {
+                                mesh.settings.point_type = CUBE;
+                            }
+
+                            // Change point radius
+                            float gui_settings_point_radius_min = 0.01f, gui_settings_point_radius_max = 0.2f;
+                            GuiGroupBox(gui_settings_view_group_box_point_radius, "Point Radius");
+                            GuiSlider(gui_settings_view_slider_point_radius, "0.01", "0.2", &mesh.settings.point_radius, gui_settings_point_radius_min, gui_settings_point_radius_max);
+                        }
                         break;
                     default: break;
                 }
