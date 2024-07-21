@@ -61,10 +61,14 @@ void draw_mesh(paws_mesh* mesh) {
                     break;
             }
 
-            DrawLine3D(*start_vert, *end_vertex, color_line);
+            if ( mesh->is_draw_edges ) {
+                DrawLine3D(*start_vert, *end_vertex, color_line);
+            }
         }
 
-        DrawLine3D(*start_vertex, *end_vertex, color_line);
+        if ( mesh->is_draw_edges ) {
+            DrawLine3D(*start_vertex, *end_vertex, color_line);
+        }
 
         if ( is_draw_normals ) {
             face_mid_point.x /= indices_count + 1;
