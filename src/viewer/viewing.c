@@ -8,7 +8,7 @@
 /** 
  * @brief Draw each face of a mesh (points, edges)
  * @param[in] mesh - paws_mesh object
- * @version 0.2.0
+ * @version 0.3.0
  */
 void draw_mesh(paws_mesh* mesh) {
     size_t faces_count = cvector_size(mesh->faces);
@@ -16,7 +16,7 @@ void draw_mesh(paws_mesh* mesh) {
     float point_radius = mesh->settings.point_radius;
 
     Color color_point = mesh->settings.color_point;
-    Color color_line = mesh->settings.color_line;
+    Color color_line = mesh->settings.color_edge;
     Color color_normal = mesh->settings.color_normal;
 
     bool is_draw_normals = mesh->is_draw_normals;
