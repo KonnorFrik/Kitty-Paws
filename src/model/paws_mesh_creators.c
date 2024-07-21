@@ -17,6 +17,7 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->faces = cvector_new(1);
 
     mesh->is_draw_normals = false;
+    mesh->is_draw_edges = true;
 
     mesh->settings.color_point = BLACK;
     mesh->settings.color_line = BLACK;

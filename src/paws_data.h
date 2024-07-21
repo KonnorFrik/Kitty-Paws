@@ -28,6 +28,7 @@ typedef struct _paws_mesh {
     bool is_loaded;        ///< Is mesh loaded from file and ready or not
     bool is_draw_normals;  ///< Is need to draw normals
     bool is_draw_textures; ///< Is need to draw textures
+    bool is_draw_edges;    /// Is need to draw edges
 
     struct settings {
         enum point_type { ///< How to draw a point
