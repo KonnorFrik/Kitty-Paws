@@ -159,11 +159,62 @@ int main() {
                     .height = 30
                 };
 
+                // Point ColorPicker area
+                Rectangle gui_settings_view_line_point_colorpick = {
+                    .x = gui_settings_view_line_point_radius.x + gui_settings_view_line_point_radius.width + 10,
+                    .y = gui_settings_view_line_point_radius.y,
+                    .width = 160,
+                    .height = 0
+                };
+                Rectangle gui_settings_view_colorpicker_point = {
+                    .x = gui_settings_view_line_point_colorpick.x,
+                    .y = gui_settings_view_line_point_colorpick.y + 10,
+                    .width = 130,
+                    .height = 130
+                };
+
+                // Draw edges switch area
                 Rectangle gui_settings_view_checkbox_edges = {
                     .x = gui_settings_view_dropbox_point_type.x,
                     .y = gui_settings_view_dropbox_point_type.y + 140,
                     .width = 30,
                     .height = 30
+                };
+
+                // Edge ColorPicker area
+                Rectangle gui_settings_view_line_edge_colorpick = {
+                    .x = gui_settings_view_line_point_colorpick.x,
+                    .y = gui_settings_view_checkbox_edges.y,
+                    .width = 160,
+                    .height = 0
+                };
+                Rectangle gui_settings_view_colorpicker_edge = {
+                    .x = gui_settings_view_line_edge_colorpick.x,
+                    .y = gui_settings_view_line_edge_colorpick.y + 10,
+                    .width = 130,
+                    .height = 130
+                };
+
+                // Draw normals switch area
+                Rectangle gui_settings_view_checkbox_normals = {
+                    .x = gui_settings_view_checkbox_edges.x,
+                    .y = gui_settings_view_checkbox_edges.y + 155,
+                    .width = 30,
+                    .height = 30
+                };
+
+                // Normal ColorPicker area
+                Rectangle gui_settings_view_line_normal_colorpick = {
+                    .x = gui_settings_view_colorpicker_edge.x,
+                    .y = gui_settings_view_checkbox_normals.y,
+                    .width = 160,
+                    .height = 0
+                };
+                Rectangle gui_settings_view_colorpicker_normal = {
+                    .x = gui_settings_view_line_normal_colorpick.x,
+                    .y = gui_settings_view_line_normal_colorpick.y + 10,
+                    .width = 130,
+                    .height = 130
                 };
 
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
@@ -180,6 +231,9 @@ int main() {
                             // Change point type
                             static int dropbox_chosen = 1;
                             static bool dropbox_mode = false;
+                            static Vector3 color_hsv_point = {0};
+                            static Vector3 color_hsv_edge = {0};
+                            static Vector3 color_hsv_normal = {0};
 
                             if ( GuiDropdownBox(gui_settings_view_dropbox_point_type, "None;Sphere;Cube", &dropbox_chosen, dropbox_mode) ) {
                                 dropbox_mode = !dropbox_mode;
@@ -205,6 +259,24 @@ int main() {
 
                             // Draw edges switch
                             GuiCheckBox(gui_settings_view_checkbox_edges, "Draw Edges", &mesh.is_draw_edges);
+
+                            // Point colorPicker
+                            GuiLine(gui_settings_view_line_point_colorpick, "Point Color");
+                            GuiColorPickerHSV(gui_settings_view_colorpicker_point, 0, &color_hsv_point);
+                            mesh.settings.color_point = ColorFromHSV(color_hsv_point.x, color_hsv_point.y, color_hsv_point.z);
+
+                            // Edge colorPicker
+                            GuiLine(gui_settings_view_line_edge_colorpick, "Edge Color");
+                            GuiColorPickerHSV(gui_settings_view_colorpicker_edge, 0, &color_hsv_edge);
+                            mesh.settings.color_edge = ColorFromHSV(color_hsv_edge.x, color_hsv_edge.y, color_hsv_edge.z);
+
+                            // Normal draw switch
+                            GuiCheckBox(gui_settings_view_checkbox_normals, "Draw Normals", &mesh.is_draw_normals);
+
+                            // Normal colorPicker
+                            GuiLine(gui_settings_view_line_normal_colorpick, "Normal Color");
+                            GuiColorPickerHSV(gui_settings_view_colorpicker_normal, 0, &color_hsv_normal);
+                            mesh.settings.color_normal = ColorFromHSV(color_hsv_normal.x, color_hsv_normal.y, color_hsv_normal.z);
                         }
                         break;
                     default: break;
