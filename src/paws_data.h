@@ -28,14 +28,14 @@ typedef struct _paws_mesh {
     bool is_loaded;        ///< Is mesh loaded from file and ready or not
     bool is_draw_normals;  ///< Is need to draw normals
     bool is_draw_textures; ///< Is need to draw textures
-    bool is_draw_edges;    /// Is need to draw edges
+    bool is_draw_edges;    ///< Is need to draw edges
 
     struct settings {
         enum point_type { ///< How to draw a point
             NONE, SPHERE, CUBE, 
         } point_type;
         float point_radius; ///< How big will be a point
-        Color color_point, color_line, color_normal;
+        Color color_point, color_edge, color_normal;
     } settings;
 } paws_mesh;
 // TODO: add settings to mesh or object struct
