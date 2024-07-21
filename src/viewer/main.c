@@ -105,29 +105,89 @@ int main() {
                 }
 
                 enum _settings_mode {
-                    VIEW = 0,
-                    // camera,
-                    // render
+                    VIEW = 0, CAMERA // render
                 };
 
-                const char* settings_window_mode_text[] = {
-                    "View",
-                    "Camera",
+                static const char* settings_window_mode_text[] = {
+                    "View", "Camera"
                 };
 
-                int settings_mode = VIEW;
+                static const char* settings_window_camera_mode[] = {
+                    "Default", "Custom"
+                };
 
+                static int settings_mode = VIEW;
+                static bool settings_camera_is_custom_mode = false;
+
+                // Settings view mode button
                 Rectangle gui_settings_window_view_btn = {
                     .x = gui_rect_settings_window.x + 5,
                     .y = gui_rect_settings_window.y + 30,
                     .width = 90,
                     .height = 30
                 };
+
+                // Settings camera mode button
+                Rectangle gui_settings_window_camera_btn = {
+                    .x = gui_settings_window_view_btn.x + gui_settings_window_view_btn.width + 10,
+                    .y = gui_settings_window_view_btn.y,
+                    .width = 90,
+                    .height = 30
+                };
+
+                // Current settings mode text
                 Rectangle gui_settings_line = {
                     .x = gui_rect_settings_window.x,
                     .y = gui_settings_window_view_btn.y + 50,
                     .width = gui_rect_settings_window.width,
                     .height = 0
+                };
+
+                // Inside camera settings
+                // Camera mode switch
+                Rectangle gui_settings_camera_mode_switch = {
+                    .x = gui_settings_line.x + 10,
+                    .y = gui_settings_line.y + 20,
+                    .width = 30,
+                    .height = 30
+                };
+
+                // Default camera - fovy change
+                Rectangle gui_settings_camera_line_fovy = {
+                    .x = gui_settings_camera_mode_switch.x,
+                    .y = gui_settings_camera_mode_switch.y + gui_settings_camera_mode_switch.height + 20,
+                    .width = 305,
+                    .height = 0
+                };
+                Rectangle gui_settings_camera_spinner_fovy = {
+                    .x = gui_settings_camera_line_fovy.x,
+                    .y = gui_settings_camera_line_fovy.y + 15,
+                    .width = 100,
+                    .height = 30
+                };
+                static int camera_fovy_min = 20, camera_fovy_max = 120, camera_fovy_value = 45;
+                static bool camera_fovy_is_manual = false;
+
+                // Default camera - fovy change manual input switch
+                Rectangle gui_settings_camera_spinner_fovy_switch = {
+                    .x = gui_settings_camera_spinner_fovy.x + gui_settings_camera_spinner_fovy.width + 55,
+                    .y = gui_settings_camera_spinner_fovy.y,
+                    .width = 30,
+                    .height = 30
+                };
+
+                // Default camera - change projection
+                Rectangle gui_settings_camera_line_projection = {
+                    .x = gui_settings_camera_mode_switch.x,
+                    .y = gui_settings_camera_spinner_fovy.y + gui_settings_camera_spinner_fovy.height + 30,
+                    .width = 180,
+                    .height = 0
+                };
+                Rectangle gui_settings_camera_dropbox_projection = {
+                    .x = gui_settings_camera_line_projection.x,
+                    .y = gui_settings_camera_line_projection.y + 15,
+                    .width = 160,
+                    .height = 30
                 };
 
                 // Inside view settings
@@ -220,6 +280,9 @@ int main() {
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
+                if ( GuiButton(gui_settings_window_camera_btn, "Camera") ) {
+                    settings_mode = CAMERA;
+                }
 
                 GuiLine(gui_settings_line, settings_window_mode_text[settings_mode]);
 
@@ -277,6 +340,38 @@ int main() {
                             GuiLine(gui_settings_view_line_normal_colorpick, "Normal Color");
                             GuiColorPickerHSV(gui_settings_view_colorpicker_normal, 0, &color_hsv_normal);
                             mesh.settings.color_normal = ColorFromHSV(color_hsv_normal.x, color_hsv_normal.y, color_hsv_normal.z);
+                        }
+                        break;
+
+                    case CAMERA:
+                        {
+                            static char camera_mode_buffer[32] = "Camera: Default";
+
+                            if ( GuiCheckBox(gui_settings_camera_mode_switch, camera_mode_buffer, &settings_camera_is_custom_mode) ) {
+                                sprintf(camera_mode_buffer, "Camera: %s", settings_window_camera_mode[settings_camera_is_custom_mode]);
+                            }
+
+                            if ( settings_camera_is_custom_mode ) {
+                                // Custom settings here
+
+                            } else {
+                                // Default settings here
+                                GuiLine(gui_settings_camera_line_fovy, "fovY");
+                                // Change camera fovy
+                                GuiSpinner(gui_settings_camera_spinner_fovy, 0, &camera_fovy_value, camera_fovy_min, camera_fovy_max, camera_fovy_is_manual);
+                                camera.fovy = camera_fovy_value;
+                                // Switch to manual input camera fovy
+                                GuiCheckBox(gui_settings_camera_spinner_fovy_switch, "Manual input", &camera_fovy_is_manual);
+
+                                // Change camera projection type
+                                static int camera_projection_type = 0; // perspective
+                                static bool camera_projection_dropbox_mode = false;
+                                GuiLine(gui_settings_camera_line_projection, "Projection Type");
+                                if ( GuiDropdownBox(gui_settings_camera_dropbox_projection, "Perspective;Orthographic", &camera_projection_type, camera_projection_dropbox_mode) ) {
+                                    camera_projection_dropbox_mode = !camera_projection_dropbox_mode;
+                                }
+                                camera.projection = camera_projection_type;
+                            }
                         }
                         break;
                     default: break;
