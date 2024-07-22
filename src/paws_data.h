@@ -18,7 +18,7 @@ typedef struct _paws_face {
 
 /**
  * @brief Hold mesh loaded from file
- * @version 0.2.0
+ * @version 0.3.0
  */
 typedef struct _paws_mesh {
     cvector* vertices;     ///< Contains pointers to Vector3 
@@ -28,27 +28,20 @@ typedef struct _paws_mesh {
     bool is_loaded;        ///< Is mesh loaded from file and ready or not
     bool is_draw_normals;  ///< Is need to draw normals
     bool is_draw_textures; ///< Is need to draw textures
+    bool is_draw_edges;    ///< Is need to draw edges
+
+    char* name;            ///< Name of object
 
     struct settings {
         enum point_type { ///< How to draw a point
             NONE, SPHERE, CUBE, 
         } point_type;
         float point_radius; ///< How big will be a point
-        Color color_point, color_line, color_normal;
+        Color color_point, color_edge, color_normal;
     } settings;
 } paws_mesh;
 // TODO: add settings to mesh or object struct
 // - [ ]render-type - wireframe, model, texture, ...
-// - [x]Draw points as: sphere, cube, ...
-// - [x]Color for: points, lines
-// - [x]Loaded and ready or not
-
-// TODO: Add gui for change mesh settings
-// [ ] Change points type
-// [ ] Change points/line colors
-// [ ] Render normals or not ( bool var in settings )
-// [ ] Render materials or not ( bool var in settings )
-// [ ] Render textures or not ( bool var in settings )
 
 // TODO: create struct with filepath, mesh, something more to hold object
 // - Also write functions for manage this struct (load, save, unload, etc)
