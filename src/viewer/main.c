@@ -19,6 +19,7 @@ int main() {
 
     // hardcoded value for testing
     char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    // char* mesh_filepath = "test.obj";
     // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
@@ -414,6 +415,11 @@ int main() {
 
     // Deinitialize anything here
     CloseWindow();
+
+    // if ( save_format_obj("test.obj", &mesh) ) {
+    //     fprintf(stderr, "[ERROR] Can't save file: --\n");
+    // }
+
     paws_mesh_dtor(&mesh);
 
     return status;
