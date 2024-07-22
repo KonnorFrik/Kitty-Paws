@@ -16,7 +16,7 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->normals = cvector_new(1);
     mesh->faces = cvector_new(1);
 
-    // mesh->is_draw_normals = false;
+    // mesh->is_draw_normals = true;
     mesh->is_draw_edges = true;
 
     mesh->settings.color_point = BLACK;
@@ -24,6 +24,8 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->settings.color_normal = BLUE;
     mesh->settings.point_type = SPHERE;
     mesh->settings.point_radius = 0.1;
+
+    mesh->name = NULL;
 
     if ( !mesh->vertices || 
          !mesh->textures || 
