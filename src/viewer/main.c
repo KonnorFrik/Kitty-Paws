@@ -18,8 +18,8 @@ int main() {
     int target_fps = 60;
 
     // hardcoded value for testing
-    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
-    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
+    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
     if ( paws_mesh_ctor(&mesh) ) {
@@ -99,8 +99,9 @@ int main() {
             }
             EndMode3D();
 
-
-            DrawText(mesh.name, 5, 5, 19, BLACK);
+            if ( mesh.name ) {
+                DrawText(mesh.name, 5, 5, 19, BLACK);
+            }
 
             //Draw GUI here ------------------
             if ( !is_show_settings_window && GuiButton(gui_rect_settings_button, "Settings") ) {
