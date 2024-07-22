@@ -30,6 +30,8 @@ typedef struct _paws_mesh {
     bool is_draw_textures; ///< Is need to draw textures
     bool is_draw_edges;    ///< Is need to draw edges
 
+    char* name;            ///< Name of object
+
     struct settings {
         enum point_type { ///< How to draw a point
             NONE, SPHERE, CUBE, 
