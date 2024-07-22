@@ -5,6 +5,10 @@
 
 #define APP_TITLE "Kitty Paws"
 
+// TODO: write func for draw gui
+// for mesh settings: args - ptr to mesh
+// for camera: ptr to default camera, ptr to custom camera
+
 int main() {
     // Initialize anything here
     int status = 0;
@@ -14,7 +18,8 @@ int main() {
     int target_fps = 60;
 
     // hardcoded value for testing
-    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
     if ( paws_mesh_ctor(&mesh) ) {
@@ -93,6 +98,9 @@ int main() {
                 }
             }
             EndMode3D();
+
+
+            DrawText(mesh.name, 5, 5, 19, BLACK);
 
             //Draw GUI here ------------------
             if ( !is_show_settings_window && GuiButton(gui_rect_settings_button, "Settings") ) {
@@ -277,6 +285,20 @@ int main() {
                     .height = 130
                 };
 
+                // Background ColorPicker area
+                Rectangle gui_settings_view_line_background_colorpick = {
+                    .x = gui_settings_view_colorpicker_normal.x - 25,
+                    .y = gui_settings_view_colorpicker_normal.y + gui_settings_view_colorpicker_normal.height + 20,
+                    .width = 160,
+                    .height = 0
+                };
+                Rectangle gui_settings_view_colorpicker_background = {
+                    .x = gui_settings_view_colorpicker_normal.x,
+                    .y = gui_settings_view_line_background_colorpick.y + 15,
+                    .width = 130,
+                    .height = 130
+                };
+
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
@@ -297,6 +319,7 @@ int main() {
                             static Vector3 color_hsv_point = {0};
                             static Vector3 color_hsv_edge = {0};
                             static Vector3 color_hsv_normal = {0};
+                            static Vector3 color_hsv_background = {0, 0, 1};
 
                             if ( GuiDropdownBox(gui_settings_view_dropbox_point_type, "None;Sphere;Cube", &dropbox_chosen, dropbox_mode) ) {
                                 dropbox_mode = !dropbox_mode;
@@ -340,6 +363,11 @@ int main() {
                             GuiLine(gui_settings_view_line_normal_colorpick, "Normal Color");
                             GuiColorPickerHSV(gui_settings_view_colorpicker_normal, 0, &color_hsv_normal);
                             mesh.settings.color_normal = ColorFromHSV(color_hsv_normal.x, color_hsv_normal.y, color_hsv_normal.z);
+
+                            // Background ColorPicker
+                            GuiLine(gui_settings_view_line_background_colorpick, "Background Color");
+                            GuiColorPickerHSV(gui_settings_view_colorpicker_background, 0, &color_hsv_background);
+                            color_background = ColorFromHSV(color_hsv_background.x, color_hsv_background.y, color_hsv_background.z);
                         }
                         break;
 
