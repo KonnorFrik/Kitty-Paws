@@ -42,8 +42,6 @@ typedef struct _paws_mesh {
         Color color_point, color_edge, color_normal;
     } settings;
 } paws_mesh;
-// TODO: add settings to mesh or object struct
-// - [ ]render-type - wireframe, model, texture, ...
 
 // TODO: create struct with filepath, mesh, something more to hold object
 // - Also write functions for manage this struct (load, save, unload, etc)

@@ -110,6 +110,7 @@ int main() {
             }
 
             if ( is_show_settings_window ) {
+                // Open settings button
                 if ( GuiWindowBox(gui_rect_settings_window, "Settings") ) {
                     is_show_settings_window = false;
                 }
@@ -127,7 +128,6 @@ int main() {
                 };
 
                 static int settings_mode = VIEW;
-                static bool settings_camera_is_custom_mode = false;
 
                 // Settings view mode button
                 Rectangle gui_settings_window_view_btn = {
@@ -376,7 +376,9 @@ int main() {
                     case CAMERA:
                         {
                             static char camera_mode_buffer[32] = "Camera: Default";
+                            static bool settings_camera_is_custom_mode = false;
 
+                            // Switch to default/custom camera
                             if ( GuiCheckBox(gui_settings_camera_mode_switch, camera_mode_buffer, &settings_camera_is_custom_mode) ) {
                                 sprintf(camera_mode_buffer, "Camera: %s", settings_window_camera_mode[settings_camera_is_custom_mode]);
                             }
