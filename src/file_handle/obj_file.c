@@ -20,6 +20,7 @@ enum obj_file_codes {
 
 inline static bool format_obj_parse_v(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_o(const char* line, paws_mesh* mesh);
 
@@ -55,6 +56,10 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
             case F_CODE: // parse lines f [v1 ...] | [v1/vt1 ...] | [v1/vt1/vn1 ...] | [v1//vn1 ...]
                 status = format_obj_parse_f(line_copy, mesh);
+                break;
+
+            case VT_CODE:
+                status = format_obj_parse_vt(line_copy, mesh);
                 break;
 
             // case G_CODE:;
@@ -134,11 +139,11 @@ bool save_format_obj(const char* filepath, paws_mesh* mesh) {
 
     // write all textures
     for (size_t vi = 0; !status && vi < cvector_size(mesh->textures); ++vi) {
-        Vector2* texture = cvector_at(mesh->normals, vi);
+        Vector2* texture = cvector_at(mesh->textures, vi);
         fprintf(file, "vt %.6f %.6f\n", texture->x, texture->y);
     }
 
-    // write 's' param ( TODO: find what is it)
+    // write 's' param ( shader shooth)
     // write 'usemtl ...' TODO: find how to use materials
 
     // write all faces
@@ -159,6 +164,36 @@ bool save_format_obj(const char* filepath, paws_mesh* mesh) {
     return status;
 }
 
+/**
+ * @brief Read and parse one line starts with 'vt' code from '.obj' file.
+ * @param[in]  line - line from file
+ * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
+ * @return status - false:OK; true:ERROR
+ * @version 0.1.0
+ */
+inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh) {
+    bool status = false;
+    Vector2* texture = calloc(1, sizeof(Vector2));
+
+    if ( !texture ) {
+        status = true;
+    }
+
+    if ( !status ) {
+        if ( sscanf(line, "%f %f", &texture->x, &texture->y) != 2 ) {
+            #if PRINT_ERROR == 1
+            fprintf(stderr, "[ERROR] Read less than 2 texture coordinates\n");
+            #endif
+
+            status = true;
+
+        } else {
+            cvector_push_back(mesh->textures, texture);
+        }
+    }
+
+    return status;
+}
 
 /**
  * @brief Read and parse one line starts with 'o' code from '.obj' file.

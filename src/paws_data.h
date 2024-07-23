@@ -19,7 +19,7 @@ typedef struct _paws_face {
 } paws_face_indices;
 
 /**
- * @brief Hold mesh loaded from file
+ * @brief Hold mesh 
  * @version 0.3.0
  */
 typedef struct _paws_mesh {
