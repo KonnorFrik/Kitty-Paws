@@ -18,16 +18,17 @@ enum obj_file_codes {
     O_CODE = ('o' << 8) | ' ',
 };
 
-inline static bool format_obj_parse_v(char const* line, paws_mesh* mesh);
-inline static bool format_obj_parse_vn(char const* line, paws_mesh* mesh);
-inline static bool format_obj_parse_f(char const* line, paws_mesh* mesh);
-inline static bool format_obj_parse_o(char const* line, paws_mesh* mesh);
+inline static bool format_obj_parse_v(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_o(const char* line, paws_mesh* mesh);
 
 /**
  * @brief Read and parse file with '.obj' format. Write data to preallocated object
  * @param[in]  filepath - Path to '.obj' file
  * @param[out] mesh     - Mesh object with preinited cvector objects for write data in it
- * @return status - false: File parsed; true: Some error occurred
+ * @return status - false:OK; true:ERROR
  * @version 0.1.0
  */
 bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
@@ -55,6 +56,10 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
             case F_CODE: // parse lines f [v1 ...] | [v1/vt1 ...] | [v1/vt1/vn1 ...] | [v1//vn1 ...]
                 status = format_obj_parse_f(line_copy, mesh);
+                break;
+
+            case VT_CODE:
+                status = format_obj_parse_vt(line_copy, mesh);
                 break;
 
             // case G_CODE:;
@@ -88,15 +93,116 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
     return status;
 }
 
+/**
+ * @brief Save mesh to file 
+ * @param[in] filepath Filepath for save
+ * @param[in] mesh     paws_mesh object for save
+ * @return status false:OK true:ERROR
+ * @version 0.1.0
+ */
+bool save_format_obj(const char* filepath, paws_mesh* mesh) {
+    // TODO: use this func for save object (mesh + materials + textures)
+    // change argument from 'paws_mesh' to 'paws_object'
+    bool status = false;
+    FILE* file = fopen(filepath, "wt");
+
+    if ( !file ) {
+        #if PRINT_ERROR == 1
+        fprintf(stderr, "[ERROR] Can't open file for save: '%s'\n", filepath);
+        #endif
+        status = true;
+    }
+
+    // Write comments with program name and version
+    if ( !status ) {
+        fprintf(file, "#Kitty-Paws v%s\n", KITTY_PAWS_VERSION_STR);
+    }
+
+    // write mtllib file
+
+    // write object name
+    if ( !status ) {
+        fprintf(file, "o %s\n", mesh->name);
+    }
+
+    // write all vertices
+    for (size_t vi = 0; !status && vi < cvector_size(mesh->vertices); ++vi) {
+        Vector3* vertex = cvector_at(mesh->vertices, vi);
+        fprintf(file, "v %.6f %.6f %.6f\n", vertex->x, vertex->y, vertex->z);
+    }
+
+    // write all normals
+    for (size_t vi = 0; !status && vi < cvector_size(mesh->normals); ++vi) {
+        Vector3* normal = cvector_at(mesh->normals, vi);
+        fprintf(file, "vn %.6f %.6f %.6f\n", normal->x, normal->y, normal->z);
+    }
+
+    // write all textures
+    for (size_t vi = 0; !status && vi < cvector_size(mesh->textures); ++vi) {
+        Vector2* texture = cvector_at(mesh->textures, vi);
+        fprintf(file, "vt %.6f %.6f\n", texture->x, texture->y);
+    }
+
+    // write 's' param ( shader shooth)
+    // write 'usemtl ...' TODO: find how to use materials
+
+    // write all faces
+    for (size_t fi = 0; fi < cvector_size(mesh->faces); ++fi) {
+        cvector* faces = cvector_at(mesh->faces, fi);
+
+        fprintf(file, "f");
+
+        for (size_t vi = 0; vi < cvector_size(faces); ++vi) {
+            paws_face_indices* one_face = cvector_at(faces, vi);
+
+            fprintf(file, " %lld/%lld/%lld", one_face->vertex_index + 1, one_face->texture_index + 1, one_face->normal_index + 1);
+        }
+
+        fprintf(file, "\n");
+    }
+
+    return status;
+}
+
+/**
+ * @brief Read and parse one line starts with 'vt' code from '.obj' file.
+ * @param[in]  line - line from file
+ * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
+ * @return status - false:OK; true:ERROR
+ * @version 0.1.0
+ */
+inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh) {
+    bool status = false;
+    Vector2* texture = calloc(1, sizeof(Vector2));
+
+    if ( !texture ) {
+        status = true;
+    }
+
+    if ( !status ) {
+        if ( sscanf(line, "%f %f", &texture->x, &texture->y) != 2 ) {
+            #if PRINT_ERROR == 1
+            fprintf(stderr, "[ERROR] Read less than 2 texture coordinates\n");
+            #endif
+
+            status = true;
+
+        } else {
+            cvector_push_back(mesh->textures, texture);
+        }
+    }
+
+    return status;
+}
 
 /**
  * @brief Read and parse one line starts with 'o' code from '.obj' file.
  * @param[in]  line - line from file
  * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
- * @return status - false: File parsed; true: Some error occurred
+ * @return status - false:OK; true:ERROR
  * @version 0.1.1
  */
-inline static bool format_obj_parse_o(char const* line, paws_mesh* mesh) {
+inline static bool format_obj_parse_o(const char* line, paws_mesh* mesh) {
     bool status = false;
 
     size_t len = 0;
@@ -128,10 +234,10 @@ inline static bool format_obj_parse_o(char const* line, paws_mesh* mesh) {
  * @brief Read and parse one line starts with 'v' code from '.obj' file.
  * @param[in]  line - line from file
  * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
- * @return status - false: File parsed; true: Some error occurred
+ * @return status - false:OK; true:ERROR
  * @version 0.1.1
  */
-inline static bool format_obj_parse_v(char const* line, paws_mesh* mesh) {
+inline static bool format_obj_parse_v(const char* line, paws_mesh* mesh) {
     bool status = false;
     Vector3* vertex = calloc(1, sizeof(Vector3));
 
@@ -164,10 +270,10 @@ inline static bool format_obj_parse_v(char const* line, paws_mesh* mesh) {
  * @brief Read and parse one line starts with 'f' code from '.obj' file.
  * @param[in]  line - line from file
  * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
- * @return status - false: File parsed; true: Some error occurred
+ * @return status - false:OK; true:ERROR
  * @version 0.1.1
  */
-inline static bool format_obj_parse_f(char const* line, paws_mesh* mesh) {
+inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
     bool status = false;
     bool loop = true;
     char const* copy = line;
@@ -256,10 +362,10 @@ inline static bool format_obj_parse_f(char const* line, paws_mesh* mesh) {
  * @brief Read and parse one line starts with 'vn' code from '.obj' file.
  * @param[in]  line - line from file
  * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
- * @return status - false: File parsed; true: Some error occurred
+ * @return status - false:OK; true:ERROR
  * @version 0.1.1
  */
-inline static bool format_obj_parse_vn(char const* line, paws_mesh* mesh) {
+inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh) {
     bool status = false;
     Vector3* normal = calloc(1, sizeof(Vector3));
 

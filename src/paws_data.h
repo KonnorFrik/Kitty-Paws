@@ -4,6 +4,8 @@
 #ifndef __KITTY_PAWS_DATA_H__
 #define __KITTY_PAWS_DATA_H__
 
+#define KITTY_PAWS_VERSION_STR "0.1.0"
+
 #include <stddef.h>
 #include <raylib.h>
 #include "cvector/cvector.h"
@@ -17,7 +19,7 @@ typedef struct _paws_face {
 } paws_face_indices;
 
 /**
- * @brief Hold mesh loaded from file
+ * @brief Hold mesh 
  * @version 0.3.0
  */
 typedef struct _paws_mesh {
@@ -40,14 +42,13 @@ typedef struct _paws_mesh {
         Color color_point, color_edge, color_normal;
     } settings;
 } paws_mesh;
-// TODO: add settings to mesh or object struct
-// - [ ]render-type - wireframe, model, texture, ...
 
 // TODO: create struct with filepath, mesh, something more to hold object
 // - Also write functions for manage this struct (load, save, unload, etc)
 
 // Parser related functions
 bool parse_format_obj(const char* filepath, paws_mesh* mesh);
+bool save_format_obj(const char* filepath, paws_mesh* mesh);
 
 // Mesh related functions
 bool paws_mesh_ctor(paws_mesh* mesh);
