@@ -1,6 +1,7 @@
 #include "../paws_data.h"
 #include "../raygui_impl/raygui.h"
 #include <raylib.h>
+#include <raymath.h>
 #include <stdio.h>
 
 #define APP_TITLE "Kitty Paws"
@@ -52,6 +53,17 @@ int main() {
     Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
     gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
 
+    // Points focus
+    Ray ray_mouse = {0};
+    cvector* focus_points = cvector_new(1);
+    bool append_focus_points = false;
+    Vector3 normal_x_focus_points = {1, 0, 0};
+    Vector3 normal_y_focus_points = {0, 1, 0};
+    Vector3 normal_z_focus_points = {0, 0, 1};
+    Vector3 axis_x_focus_points = {0};
+    Vector3 axis_y_focus_points = {0};
+    Vector3 axis_z_focus_points = {0};
+
     // SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
@@ -60,10 +72,107 @@ int main() {
 
     while ( !status && !WindowShouldClose() ) {
         // Update anything here ------------------
-        if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
+
+        if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT) &&
              ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
         ) {
             UpdateCamera(&camera, CAMERA_THIRD_PERSON);
+        }
+
+        if ( IsKeyPressed(KEY_LEFT_CONTROL) ) {
+            append_focus_points = true;
+
+        } else if ( IsKeyReleased(KEY_LEFT_CONTROL) ) {
+            append_focus_points = false;
+        }
+
+        // Choose points for modify
+        if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mesh.is_loaded && 
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
+        ) {
+            ray_mouse = GetMouseRay(GetMousePosition(), camera);
+            // size_t focus_size_before = cvector_size(focus_points);
+            float ray_collision_z_min = INFINITY;
+
+            for (size_t vi = 0; vi < cvector_size(mesh.vertices); ++vi) {
+                Vector3* check_point = cvector_at(mesh.vertices, vi);
+                RayCollision ray_collision = {0};
+
+                switch ( mesh.settings.point_type ) {
+                    case SPHERE:
+                        {
+                            ray_collision = GetRayCollisionSphere(ray_mouse, *check_point, mesh.settings.point_radius);
+                            if ( ray_collision.hit ) {
+                                printf("Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("Nearest dist: %.3f\n", ray_collision.distance);
+                            }
+                        }
+                        break;
+                    case CUBE:
+                        {
+                            // TODO: rewrite for check box collision
+                            ray_collision = GetRayCollisionSphere(ray_mouse, *check_point, mesh.settings.point_radius);
+                            if ( ray_collision.hit ) {
+                                printf("Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("Nearest dist: %.3f\n", ray_collision.distance);
+                            }
+                        }
+                        break;
+
+                    default: break;
+                }
+
+                // Focus only hitted nearest point
+                if ( ray_collision.hit && ray_collision.distance < ray_collision_z_min ) {
+                    if ( !isinf(ray_collision_z_min) ) { // not inf = collision was occurred before in same loop
+                        cvector_pop_back(focus_points);
+                        printf("POPPED\n");
+                    }
+
+                    ray_collision_z_min = ray_collision.distance;
+
+                    if ( !append_focus_points ) {
+                        cvector_clear(focus_points);
+                        printf("CLEARED 1\n");
+                    }
+
+                    // TODO: check if point alredy in focus
+                    // if ( !cvector_contain(focus_points, check_point) )
+                    cvector_push_back(focus_points, check_point);
+
+                }
+            }
+
+            if ( isinf(ray_collision_z_min) ) {
+                cvector_clear(focus_points);
+                printf("CLEARED\n");
+            }
+            if ( !isinf(ray_collision_z_min) ) {
+                printf("z min: %f\n", ray_collision_z_min);
+            }
+            printf("count: %lu\n", cvector_size(focus_points));
+            printf("\n");
+        }
+
+        float tmp_size_focus_points = 0;
+        Vector3 mid_focus_points = {0};
+
+        // Calculate middle point of chosen vertices and xyz axis
+        if ( (tmp_size_focus_points = cvector_size(focus_points)) ) {
+            for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                Vector3* point = cvector_at(focus_points, i);
+                mid_focus_points.x += point->x;
+                mid_focus_points.y += point->y;
+                mid_focus_points.z += point->z;
+            }
+
+            mid_focus_points.x /= tmp_size_focus_points;
+            mid_focus_points.y /= tmp_size_focus_points;
+            mid_focus_points.z /= tmp_size_focus_points;
+
+            axis_x_focus_points = Vector3Add(mid_focus_points, normal_x_focus_points);
+            axis_y_focus_points = Vector3Add(mid_focus_points, normal_y_focus_points);
+            axis_z_focus_points = Vector3Add(mid_focus_points, normal_z_focus_points);
         }
 
         // Draw gui at position relative to window width && height
@@ -96,6 +205,14 @@ int main() {
 
                 if ( mesh.is_loaded ) {
                     draw_mesh(&mesh);
+                }
+
+                // Draw chosen vertices
+                if ( tmp_size_focus_points ) {
+                    DrawSphere(mid_focus_points, mesh.settings.point_radius, GRAY);
+                    DrawLine3D(mid_focus_points, axis_x_focus_points, RED);
+                    DrawLine3D(mid_focus_points, axis_y_focus_points, GREEN);
+                    DrawLine3D(mid_focus_points, axis_z_focus_points, BLUE);
                 }
             }
             EndMode3D();
@@ -423,6 +540,7 @@ int main() {
     // }
 
     paws_mesh_dtor(&mesh);
+    cvector_delete(focus_points);
 
     return status;
 }
