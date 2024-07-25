@@ -20,9 +20,9 @@ int main() {
     int target_fps = 60;
 
     // hardcoded value for testing
-    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
     // char* mesh_filepath = "test.obj";
-    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
+    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
     if ( paws_mesh_ctor(&mesh) ) {
@@ -182,7 +182,8 @@ int main() {
             if ( isinf(ray_collision_dist_min) &&
                  !ray_collision_drag_axis_x.hit &&
                  !ray_collision_drag_axis_y.hit &&
-                 !ray_collision_drag_axis_z.hit
+                 !ray_collision_drag_axis_z.hit &&
+                 !append_focus_points
             ) {
                 cvector_clear(focus_points);
             }
@@ -252,22 +253,32 @@ int main() {
             Vector2 mouse_delta = GetMouseDelta();
             float move_point_speed_x = mouse_delta.x / 100;
             float move_point_speed_y = mouse_delta.y / 100;
+            #if DEBUG_PRINT == 1
+            printf("Delta for x: %f\n", mouse_delta.x);
+            printf("Delta for y: %f\n", mouse_delta.y);
+            printf("Speed for x: %f\n", move_point_speed_x);
+            printf("Speed for y: %f\n", move_point_speed_y);
+            printf("\n");
+            #endif
+
 
             if ( ray_collision_drag_axis_x.hit ) {
-                #if DEBUG_PRINT == 1
-                printf("Delta for x: %f\n", mouse_delta.x);
-                printf("Speed for x: %f\n", move_point_speed_x);
-                printf("\n");
-                #endif
-
                 for (size_t i = 0; i < tmp_size_focus_points; ++i) {
                     Vector3* point = cvector_at(focus_points, i);
                     point->x += move_point_speed_x;
                 }
 
             } else if ( ray_collision_drag_axis_y.hit ) {
+                for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                    Vector3* point = cvector_at(focus_points, i);
+                    point->y -= move_point_speed_y;
+                }
 
             } else if ( ray_collision_drag_axis_z.hit ) {
+                for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                    Vector3* point = cvector_at(focus_points, i);
+                    point->z += (-move_point_speed_x + move_point_speed_y) / 1.5;
+                }
 
             }
         }
