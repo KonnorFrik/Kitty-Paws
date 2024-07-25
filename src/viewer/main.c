@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define APP_TITLE "Kitty Paws"
+#define DEBUG_PRINT 1
 
 // TODO: write func for draw gui
 // for mesh settings: args - ptr to mesh
@@ -63,6 +64,14 @@ int main() {
     Vector3 axis_x_focus_points = {0};
     Vector3 axis_y_focus_points = {0};
     Vector3 axis_z_focus_points = {0};
+    Color color_drag_axis_x = RED;
+    Color color_drag_axis_y = GREEN;
+    Color color_drag_axis_z = BLUE;
+    BoundingBox drag_axis_x_focus_points = {0};
+    BoundingBox drag_axis_y_focus_points = {0};
+    BoundingBox drag_axis_z_focus_points = {0};
+    float drag_axis_size = 1.0f;
+    float drag_axis_sub_size = drag_axis_size / 40;
 
     // SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -86,6 +95,8 @@ int main() {
             append_focus_points = false;
         }
 
+        // TODO: add here check collision for dragable axis
+
         // Choose points for modify
         if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mesh.is_loaded && 
              ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
@@ -103,8 +114,10 @@ int main() {
                         {
                             ray_collision = GetRayCollisionSphere(ray_mouse, *check_point, mesh.settings.point_radius);
                             if ( ray_collision.hit ) {
-                                printf("Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
-                                printf("Nearest dist: %.3f\n", ray_collision.distance);
+                                #if DEBUG_PRINT == 1
+                                printf("[FOCUS]: Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("[FOCUS]: Nearest dist: %.3f\n", ray_collision.distance);
+                                #endif
                             }
                         }
                         break;
@@ -113,8 +126,10 @@ int main() {
                             // TODO: rewrite for check box collision
                             ray_collision = GetRayCollisionSphere(ray_mouse, *check_point, mesh.settings.point_radius);
                             if ( ray_collision.hit ) {
-                                printf("Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
-                                printf("Nearest dist: %.3f\n", ray_collision.distance);
+                                #if DEBUG_PRINT == 1
+                                printf("[FOCUS]: Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("[FOCUS]: Nearest dist: %.3f\n", ray_collision.distance);
+                                #endif
                             }
                         }
                         break;
@@ -122,36 +137,34 @@ int main() {
                     default: break;
                 }
 
-                // Focus only hitted nearest point
+                // Focus only hitted by ray nearest point
                 if ( ray_collision.hit && ray_collision.distance < ray_collision_z_min ) {
                     if ( !isinf(ray_collision_z_min) ) { // not inf = collision was occurred before in same loop
                         cvector_pop_back(focus_points);
-                        printf("POPPED\n");
                     }
 
                     ray_collision_z_min = ray_collision.distance;
 
                     if ( !append_focus_points ) {
                         cvector_clear(focus_points);
-                        printf("CLEARED 1\n");
                     }
 
-                    // TODO: check if point alredy in focus
-                    // if ( !cvector_contain(focus_points, check_point) )
-                    cvector_push_back(focus_points, check_point);
+                    if ( !cvector_contain(focus_points, check_point) ) {
+                        cvector_push_back(focus_points, check_point);
+                    }
 
                 }
             }
 
             if ( isinf(ray_collision_z_min) ) {
                 cvector_clear(focus_points);
-                printf("CLEARED\n");
             }
+
             if ( !isinf(ray_collision_z_min) ) {
-                printf("z min: %f\n", ray_collision_z_min);
             }
-            printf("count: %lu\n", cvector_size(focus_points));
-            printf("\n");
+            #if DEBUG_PRINT == 1
+            printf("[FOCUS]: Points in focus: %lu\n", cvector_size(focus_points));
+            #endif
         }
 
         float tmp_size_focus_points = 0;
@@ -173,6 +186,40 @@ int main() {
             axis_x_focus_points = Vector3Add(mid_focus_points, normal_x_focus_points);
             axis_y_focus_points = Vector3Add(mid_focus_points, normal_y_focus_points);
             axis_z_focus_points = Vector3Add(mid_focus_points, normal_z_focus_points);
+
+            // Calculate dragable axis
+            drag_axis_x_focus_points.min = (Vector3){
+                .x = mid_focus_points.x,
+                .y = mid_focus_points.y - drag_axis_sub_size,
+                .z = mid_focus_points.z - drag_axis_sub_size,
+            };
+            drag_axis_x_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_size,
+                .y = mid_focus_points.y + drag_axis_sub_size,
+                .z = mid_focus_points.z + drag_axis_sub_size,
+            };
+
+            drag_axis_y_focus_points.min = (Vector3){
+                .x = mid_focus_points.x - drag_axis_sub_size,
+                .y = mid_focus_points.y,
+                .z = mid_focus_points.z - drag_axis_sub_size,
+            };
+            drag_axis_y_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_sub_size,
+                .y = mid_focus_points.y + drag_axis_size,
+                .z = mid_focus_points.z + drag_axis_sub_size,
+            };
+
+            drag_axis_z_focus_points.min = (Vector3){
+                .x = mid_focus_points.x - drag_axis_sub_size,
+                .y = mid_focus_points.y - drag_axis_sub_size,
+                .z = mid_focus_points.z,
+            };
+            drag_axis_z_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_sub_size,
+                .y = mid_focus_points.y + drag_axis_sub_size,
+                .z = mid_focus_points.z + drag_axis_size,
+            };
         }
 
         // Draw gui at position relative to window width && height
@@ -208,12 +255,24 @@ int main() {
                 }
 
                 // Draw chosen vertices
+                if ( tmp_size_focus_points > 1 ) {
+                    for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                        DrawSphere(*(Vector3*)cvector_at(focus_points, i), mesh.settings.point_radius, GOLD);
+                    }
+                }
+
                 if ( tmp_size_focus_points ) {
                     DrawSphere(mid_focus_points, mesh.settings.point_radius, GRAY);
-                    DrawLine3D(mid_focus_points, axis_x_focus_points, RED);
-                    DrawLine3D(mid_focus_points, axis_y_focus_points, GREEN);
-                    DrawLine3D(mid_focus_points, axis_z_focus_points, BLUE);
+                    // DrawLine3D(mid_focus_points, axis_x_focus_points, RED);
+                    // DrawLine3D(mid_focus_points, axis_y_focus_points, GREEN);
+                    // DrawLine3D(mid_focus_points, axis_z_focus_points, BLUE);
+
+                    // Draw dragable axis
+                    DrawBoundingBox(drag_axis_x_focus_points, color_drag_axis_x);
+                    DrawBoundingBox(drag_axis_y_focus_points, color_drag_axis_y);
+                    DrawBoundingBox(drag_axis_z_focus_points, color_drag_axis_z);
                 }
+
             }
             EndMode3D();
 
