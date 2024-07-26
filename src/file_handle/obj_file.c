@@ -32,6 +32,10 @@ inline static bool format_obj_parse_o(const char* line, paws_mesh* mesh);
  * @version 0.1.0
  */
 bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
+    if ( mesh->is_loaded ) {
+        return true;
+    }
+
     FILE* file = fopen(filepath, "rot");
 
     if ( !file ) {
@@ -101,6 +105,10 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
  * @version 0.1.0
  */
 bool save_format_obj(const char* filepath, paws_mesh* mesh) {
+    if ( !mesh->is_loaded ) {
+        return true;
+    }
+
     // TODO: use this func for save object (mesh + materials + textures)
     // change argument from 'paws_mesh' to 'paws_object'
     bool status = false;
