@@ -13,8 +13,6 @@
 // for mesh settings: args - ptr to mesh
 // for camera: ptr to default camera, ptr to custom camera
 
-// TODO: make save/load button, window, etc...
-
 void paws_mesh_clear(paws_mesh* mesh) {
     paws_mesh_dtor(mesh);
     paws_mesh_ctor(mesh);
@@ -40,10 +38,6 @@ int main() {
         fprintf(stderr, "[ERROR] Can't Allocate memory for mesh\n");
     }
 
-    // if ( parse_format_obj(mesh_filepath, &mesh) ) {
-    //     // error placeholdor
-    // }
-
     Color color_background = WHITE;
 
     Camera camera = {
@@ -56,6 +50,7 @@ int main() {
 
     // GUI variables
     bool is_show_settings_window = false;
+
     // Settings button
     Rectangle gui_rect_settings_button = {0, 0, 95, 35};
     gui_rect_settings_button.x = screen_width - gui_rect_settings_button.width;
@@ -64,13 +59,13 @@ int main() {
     Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
     gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
 
-    // Save window
+    // Save/Load windows
     bool gui_show_window_load = false;
     bool gui_show_window_save = false;
 
     static Rectangle gui_textinput_load_save_file = {
-        .x = 50 /* + 25 */,
-        .y = 30 /* + 30 */,
+        .x = 50,
+        .y = 30,
         .width = 450,
         .height = 130,
     };
@@ -81,9 +76,6 @@ int main() {
     Vector3 normal_x_focus_points = {1, 0, 0};
     Vector3 normal_y_focus_points = {0, 1, 0};
     Vector3 normal_z_focus_points = {0, 0, 1};
-    // Vector3 axis_x_focus_points = {0};
-    // Vector3 axis_y_focus_points = {0};
-    // Vector3 axis_z_focus_points = {0};
     Color color_drag_axis_x = RED;
     Color color_drag_axis_y = GREEN;
     Color color_drag_axis_z = BLUE;
@@ -234,16 +226,13 @@ int main() {
             mid_focus_points.y /= tmp_size_focus_points;
             mid_focus_points.z /= tmp_size_focus_points;
 
-            // axis_x_focus_points = Vector3Add(mid_focus_points, normal_x_focus_points);
-            // axis_y_focus_points = Vector3Add(mid_focus_points, normal_y_focus_points);
-            // axis_z_focus_points = Vector3Add(mid_focus_points, normal_z_focus_points);
-
             // Calculate dragable axis
             drag_axis_x_focus_points.min = (Vector3){
                 .x = mid_focus_points.x,
                 .y = mid_focus_points.y - drag_axis_sub_size,
                 .z = mid_focus_points.z - drag_axis_sub_size,
             };
+
             drag_axis_x_focus_points.max = (Vector3){
                 .x = mid_focus_points.x + drag_axis_size,
                 .y = mid_focus_points.y + drag_axis_sub_size,
@@ -255,6 +244,7 @@ int main() {
                 .y = mid_focus_points.y,
                 .z = mid_focus_points.z - drag_axis_sub_size,
             };
+
             drag_axis_y_focus_points.max = (Vector3){
                 .x = mid_focus_points.x + drag_axis_sub_size,
                 .y = mid_focus_points.y + drag_axis_size,
@@ -266,6 +256,7 @@ int main() {
                 .y = mid_focus_points.y - drag_axis_sub_size,
                 .z = mid_focus_points.z,
             };
+
             drag_axis_z_focus_points.max = (Vector3){
                 .x = mid_focus_points.x + drag_axis_sub_size,
                 .y = mid_focus_points.y + drag_axis_sub_size,
@@ -306,7 +297,6 @@ int main() {
                     Vector3* point = cvector_at(focus_points, i);
                     point->z += (-move_point_speed_x + move_point_speed_y) / 1.5;
                 }
-
             }
         }
 
@@ -326,7 +316,6 @@ int main() {
 
         if ( (height_diff = tmp_screen_height - screen_height) ) {
             screen_height = tmp_screen_height;
-
             gui_rect_settings_window.height = screen_height;
         }
 
@@ -351,9 +340,6 @@ int main() {
 
                 if ( tmp_size_focus_points ) {
                     DrawSphere(mid_focus_points, mesh.settings.point_radius, GRAY);
-                    // DrawLine3D(mid_focus_points, axis_x_focus_points, RED);
-                    // DrawLine3D(mid_focus_points, axis_y_focus_points, GREEN);
-                    // DrawLine3D(mid_focus_points, axis_z_focus_points, BLUE);
 
                     // Draw dragable axis
                     DrawBoundingBox(drag_axis_x_focus_points, color_drag_axis_x);
@@ -507,12 +493,14 @@ int main() {
                     .width = 305,
                     .height = 0
                 };
+
                 Rectangle gui_settings_camera_spinner_fovy = {
                     .x = gui_settings_camera_line_fovy.x,
                     .y = gui_settings_camera_line_fovy.y + 15,
                     .width = 100,
                     .height = 30
                 };
+
                 static int camera_fovy_min = 20, camera_fovy_max = 120, camera_fovy_value = 45;
                 static bool camera_fovy_is_manual = false;
 
@@ -531,6 +519,7 @@ int main() {
                     .width = 180,
                     .height = 0
                 };
+
                 Rectangle gui_settings_camera_dropbox_projection = {
                     .x = gui_settings_camera_line_projection.x,
                     .y = gui_settings_camera_line_projection.y + 15,
@@ -546,6 +535,7 @@ int main() {
                     .width = 130,
                     .height = 0//(3 * 35) + 15, // 3 buttons each with height 30
                 };
+
                 Rectangle gui_settings_view_dropbox_point_type = {
                     .x = gui_rect_settings_window.x + 15,
                     .y = gui_settings_view_line_point_type.y + 15,
@@ -560,6 +550,7 @@ int main() {
                     .width = 170,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_slider_point_radius = {
                     .x = gui_settings_view_line_point_radius.x + 40,
                     .y = gui_settings_view_line_point_radius.y + 10,
@@ -574,6 +565,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_point = {
                     .x = gui_settings_view_line_point_colorpick.x,
                     .y = gui_settings_view_line_point_colorpick.y + 10,
@@ -596,6 +588,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_edge = {
                     .x = gui_settings_view_line_edge_colorpick.x,
                     .y = gui_settings_view_line_edge_colorpick.y + 10,
@@ -618,6 +611,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_normal = {
                     .x = gui_settings_view_line_normal_colorpick.x,
                     .y = gui_settings_view_line_normal_colorpick.y + 10,
@@ -632,6 +626,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_background = {
                     .x = gui_settings_view_colorpicker_normal.x,
                     .y = gui_settings_view_line_background_colorpick.y + 15,
@@ -642,6 +637,7 @@ int main() {
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
+
                 if ( GuiButton(gui_settings_window_camera_btn, "Camera") ) {
                     settings_mode = CAMERA;
                 }
@@ -666,13 +662,13 @@ int main() {
                             }
 
                             switch ( dropbox_chosen ) {
-                                case 0: // None
+                                case 0:
                                     mesh.settings.point_type = NONE;
                                     break;
-                                case 1: // Sphere
+                                case 1:
                                     mesh.settings.point_type = SPHERE;
                                     break;
-                                case 2: // Cube
+                                case 2:
                                     mesh.settings.point_type = CUBE;
                                     break;
                                 default: break;
@@ -727,9 +723,11 @@ int main() {
                             } else {
                                 // Default settings here
                                 GuiLine(gui_settings_camera_line_fovy, "fovY");
+
                                 // Change camera fovy
                                 GuiSpinner(gui_settings_camera_spinner_fovy, 0, &camera_fovy_value, camera_fovy_min, camera_fovy_max, camera_fovy_is_manual);
                                 camera.fovy = camera_fovy_value;
+
                                 // Switch to manual input camera fovy
                                 GuiCheckBox(gui_settings_camera_spinner_fovy_switch, "Manual input", &camera_fovy_is_manual);
 
@@ -737,9 +735,14 @@ int main() {
                                 static int camera_projection_type = 0; // perspective
                                 static bool camera_projection_dropbox_mode = false;
                                 GuiLine(gui_settings_camera_line_projection, "Projection Type");
-                                if ( GuiDropdownBox(gui_settings_camera_dropbox_projection, "Perspective;Orthographic", &camera_projection_type, camera_projection_dropbox_mode) ) {
+
+                                if ( GuiDropdownBox(gui_settings_camera_dropbox_projection,
+                                                    "Perspective;Orthographic",
+                                                    &camera_projection_type, camera_projection_dropbox_mode)
+                                ) {
                                     camera_projection_dropbox_mode = !camera_projection_dropbox_mode;
                                 }
+
                                 camera.projection = camera_projection_type;
                             }
                         }
@@ -755,11 +758,6 @@ int main() {
 
     // Deinitialize anything here
     CloseWindow();
-
-    // if ( save_format_obj("test.obj", &mesh) ) {
-    //     fprintf(stderr, "[ERROR] Can't save file: --\n");
-    // }
-
     paws_mesh_dtor(&mesh);
     cvector_delete(focus_points);
 
