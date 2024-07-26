@@ -16,6 +16,7 @@ enum obj_file_codes {
     F_CODE = ('f' << 8) | ' ',
     G_CODE = ('g' << 8) | ' ',
     O_CODE = ('o' << 8) | ' ',
+    S_CODE = ('s' << 8) | ' ',
 };
 
 inline static bool format_obj_parse_v(const char* line, paws_mesh* mesh);
@@ -23,6 +24,7 @@ inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh);
 inline static bool format_obj_parse_o(const char* line, paws_mesh* mesh);
+inline static bool format_obj_parse_s(const char* line, paws_mesh* mesh);
 
 /**
  * @brief Read and parse file with '.obj' format. Write data to preallocated object
@@ -40,7 +42,7 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
     if ( !file ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Can't open file: %s\n", filepath);
+        fprintf(stderr, "[PARSE ERROR] Can't open file: %s\n", filepath);
         #endif
         return true;
     }
@@ -77,6 +79,9 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
 
             case O_CODE:
                 status = format_obj_parse_o(line_copy, mesh);
+
+            case S_CODE:
+                status = format_obj_parse_s(line_copy, mesh);
 
             default: break;
 
@@ -116,7 +121,7 @@ bool save_format_obj(const char* filepath, paws_mesh* mesh) {
 
     if ( !file ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Can't open file for save: '%s'\n", filepath);
+        fprintf(stderr, "[PARSE ERROR] Can't open file for save: '%s'\n", filepath);
         #endif
         status = true;
     }
@@ -154,6 +159,9 @@ bool save_format_obj(const char* filepath, paws_mesh* mesh) {
     // write 's' param ( shader shooth)
     // write 'usemtl ...' TODO: find how to use materials
 
+    // write smooth shading
+    fprintf(file, "s %d", mesh->smooth_shade);
+
     // write all faces
     for (size_t fi = 0; fi < cvector_size(mesh->faces); ++fi) {
         cvector* faces = cvector_at(mesh->faces, fi);
@@ -190,7 +198,7 @@ inline static bool format_obj_parse_vt(const char* line, paws_mesh* mesh) {
     if ( !status ) {
         if ( sscanf(line, "%f %f", &texture->x, &texture->y) != 2 ) {
             #if PRINT_ERROR == 1
-            fprintf(stderr, "[ERROR] Read less than 2 texture coordinates\n");
+            fprintf(stderr, "[PARSE ERROR] Read less than 2 texture coordinates\n");
             #endif
 
             status = true;
@@ -251,14 +259,14 @@ inline static bool format_obj_parse_v(const char* line, paws_mesh* mesh) {
 
     if ( !vertex ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Can't allocate memory for Vector3\n");
+        fprintf(stderr, "[PARSE ERROR] Can't allocate memory for Vector3\n");
         #endif
         status = true;
     }
 
     if ( !status && sscanf(line, "%f %f %f", &vertex->x, &vertex->y, &vertex->z) != 3 ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Read less than 3 vertices\n");
+        fprintf(stderr, "[PARSE ERROR] Read less than 3 vertices\n");
         #endif
         status = true;
     };
@@ -289,7 +297,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
 
     if ( !line_faces ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Can't allocate memory for faces\n");
+        fprintf(stderr, "[PARSE ERROR] Can't allocate memory for faces\n");
         #endif
         status = true;
     }
@@ -299,7 +307,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
 
         if ( !indeces ) {
             #if PRINT_ERROR == 1
-            fprintf(stderr, "[ERROR] Can't allocate memory for face indeces\n");
+            fprintf(stderr, "[PARSE ERROR] Can't allocate memory for face indeces\n");
             #endif
             status = true;
             continue;
@@ -310,7 +318,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
 
         } else {
             #if PRINT_ERROR == 1
-            fprintf(stderr, "[ERROR] Read less than 1 face index\n");
+            fprintf(stderr, "[PARSE ERROR] Read less than 1 face index\n");
             #endif
             status = true;
             continue;
@@ -329,7 +337,7 @@ inline static bool format_obj_parse_f(const char* line, paws_mesh* mesh) {
                 } else if (which_ind == 2) {
                     if ( sscanf(++copy, "%lld", &indeces->normal_index) != 1 ) {
                         #if PRINT_ERROR == 1
-                        fprintf(stderr, "[ERROR] Can't read normal from face line\n");
+                        fprintf(stderr, "[PARSE ERROR] Can't read normal from face line\n");
                         #endif
                         status = true;
                         continue;
@@ -379,14 +387,14 @@ inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh) {
 
     if ( !normal ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Can't allocate memory for normal\n");
+        fprintf(stderr, "[PARSE ERROR] Can't allocate memory for normal\n");
         #endif
         status = true;
     }
 
     if ( sscanf(line, "%f %f %f", &normal->x, &normal->y, &normal->z) != 3 ) {
         #if PRINT_ERROR == 1
-        fprintf(stderr, "[ERROR] Read less than 3 normals\n");
+        fprintf(stderr, "[PARSE ERROR] Read less than 3 normals\n");
         #endif
         status = true;
     }
@@ -402,3 +410,39 @@ inline static bool format_obj_parse_vn(const char* line, paws_mesh* mesh) {
     return status;
 }
 
+/**
+ * @brief Read and parse one line starts with 's' code from '.obj' file.
+ * @param[in]  line - line from file
+ * @param[out] mesh - Mesh object with preinited cvector objects for write data in it
+ * @return status - false:OK; true:ERROR
+ * @version 0.1.0
+ */
+inline static bool format_obj_parse_s(const char* line, paws_mesh* mesh) {
+    bool status = false;
+    int cant_read_count = 0;
+
+    if ( sscanf(line, "%d", &mesh->smooth_shade) != 1 ) {
+        cant_read_count++;
+    }
+
+    if ( cant_read_count == 1 ) {
+        if ( line[0] == 'o' && line[1] == 'n' ) {
+            mesh->smooth_shade = 1;
+
+        } else if ( line[0] == 'o' && line[1] == 'o' && line[2] == 'f' ) {
+            mesh->smooth_shade = 0;
+
+        } else {
+            cant_read_count++;
+        }
+    }
+
+    if ( cant_read_count == 2 ) {
+        #if PRINT_ERROR == 1
+        fprintf(stderr, "[PARSE ERROR] Can't read 's' code\n");
+        #endif
+        status = true;
+    }
+
+    return status;
+}
