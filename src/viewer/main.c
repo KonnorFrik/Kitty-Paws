@@ -1,15 +1,24 @@
 #include "../paws_data.h"
 #include "../raygui_impl/raygui.h"
 #include <raylib.h>
+#include <stdlib.h>
 #include <raymath.h>
 #include <stdio.h>
 
 #define APP_TITLE "Kitty Paws"
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
+#define FILEPATH_MAX_SIZE 1024
 
 // TODO: write func for draw gui
 // for mesh settings: args - ptr to mesh
 // for camera: ptr to default camera, ptr to custom camera
+
+// TODO: make save/load button, window, etc...
+
+void paws_mesh_clear(paws_mesh* mesh) {
+    paws_mesh_dtor(mesh);
+    paws_mesh_ctor(mesh);
+}
 
 int main() {
     // Initialize anything here
@@ -20,9 +29,10 @@ int main() {
     int target_fps = 60;
 
     // hardcoded value for testing
+    char* mesh_filepath = calloc(FILEPATH_MAX_SIZE, sizeof(char));
     // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
     // char* mesh_filepath = "test.obj";
-    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
+    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
     if ( paws_mesh_ctor(&mesh) ) {
@@ -30,9 +40,9 @@ int main() {
         fprintf(stderr, "[ERROR] Can't Allocate memory for mesh\n");
     }
 
-    if ( parse_format_obj(mesh_filepath, &mesh) ) {
-        // error placeholdor
-    }
+    // if ( parse_format_obj(mesh_filepath, &mesh) ) {
+    //     // error placeholdor
+    // }
 
     Color color_background = WHITE;
 
@@ -54,15 +64,26 @@ int main() {
     Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
     gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
 
+    // Save window
+    bool gui_show_window_load = false;
+    bool gui_show_window_save = false;
+
+    static Rectangle gui_textinput_load_save_file = {
+        .x = 50 /* + 25 */,
+        .y = 30 /* + 30 */,
+        .width = 450,
+        .height = 130,
+    };
+
     // Points focus
     cvector* focus_points = cvector_new(1);
     bool append_focus_points = false;
     Vector3 normal_x_focus_points = {1, 0, 0};
     Vector3 normal_y_focus_points = {0, 1, 0};
     Vector3 normal_z_focus_points = {0, 0, 1};
-    Vector3 axis_x_focus_points = {0};
-    Vector3 axis_y_focus_points = {0};
-    Vector3 axis_z_focus_points = {0};
+    // Vector3 axis_x_focus_points = {0};
+    // Vector3 axis_y_focus_points = {0};
+    // Vector3 axis_z_focus_points = {0};
     Color color_drag_axis_x = RED;
     Color color_drag_axis_y = GREEN;
     Color color_drag_axis_z = BLUE;
@@ -79,7 +100,9 @@ int main() {
     // SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
+    // TODO: add in gui settings text size ( with GuiSpinner)
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    GuiSetIconScale(2);
     SetTargetFPS(target_fps);
 
     while ( !status && !WindowShouldClose() ) {
@@ -122,7 +145,9 @@ int main() {
 
         // Choose points for modify
         if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mesh.is_loaded && 
-             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) ) &&
+             ( !gui_show_window_save ) &&
+             ( !gui_show_window_load )
         ) {
             Ray ray_mouse_point_collision = GetMouseRay(GetMousePosition(), camera);
             float ray_collision_dist_min = INFINITY;
@@ -209,9 +234,9 @@ int main() {
             mid_focus_points.y /= tmp_size_focus_points;
             mid_focus_points.z /= tmp_size_focus_points;
 
-            axis_x_focus_points = Vector3Add(mid_focus_points, normal_x_focus_points);
-            axis_y_focus_points = Vector3Add(mid_focus_points, normal_y_focus_points);
-            axis_z_focus_points = Vector3Add(mid_focus_points, normal_z_focus_points);
+            // axis_x_focus_points = Vector3Add(mid_focus_points, normal_x_focus_points);
+            // axis_y_focus_points = Vector3Add(mid_focus_points, normal_y_focus_points);
+            // axis_z_focus_points = Vector3Add(mid_focus_points, normal_z_focus_points);
 
             // Calculate dragable axis
             drag_axis_x_focus_points.min = (Vector3){
@@ -248,8 +273,11 @@ int main() {
             };
         }
 
-        // Drag points in focus by dragable axis if hitted anyone 
-        if ( tmp_size_focus_points && drag_axis_collision ) {
+        // Move in focus points by dragable axis if hitted anyone 
+        if ( tmp_size_focus_points && drag_axis_collision &&
+             ( !gui_show_window_save ) &&
+             ( !gui_show_window_load )
+        ) {
             Vector2 mouse_delta = GetMouseDelta();
             float move_point_speed_x = mouse_delta.x / 100;
             float move_point_speed_y = mouse_delta.y / 100;
@@ -260,7 +288,6 @@ int main() {
             printf("Speed for y: %f\n", move_point_speed_y);
             printf("\n");
             #endif
-
 
             if ( ray_collision_drag_axis_x.hit ) {
                 for (size_t i = 0; i < tmp_size_focus_points; ++i) {
@@ -344,6 +371,80 @@ int main() {
             //Draw GUI here ------------------
             if ( !is_show_settings_window && GuiButton(gui_rect_settings_button, "Settings") ) {
                 is_show_settings_window = !is_show_settings_window;
+            }
+
+            Rectangle gui_button_load_file = {
+                .x = 5,
+                .y = 30,
+                .width = 35,
+                .height = 35,
+            };
+
+            Rectangle gui_button_save_file = {
+                .x = gui_button_load_file.x,
+                .y = gui_button_load_file.y + gui_button_load_file.height + 5,
+                .width = 35,
+                .height = 35,
+            };
+
+            if ( GuiButton(gui_button_load_file, "#05#") ) {
+                // open file
+                gui_show_window_load = !gui_show_window_load;
+                gui_show_window_save = false;
+            }
+
+            if ( GuiButton(gui_button_save_file, "#06#") ) {
+                // save file
+                gui_show_window_save = !gui_show_window_save;
+                gui_show_window_load = false;
+            }
+
+            // TODO: move to start of loop
+            Vector2 mouse_pos = GetMousePosition();
+
+            if ( CheckCollisionPointRec(mouse_pos, gui_button_load_file) ) {
+                // draw help msg for load
+                Rectangle gui_label_help_text_load = {
+                    .x = mouse_pos.x + 15,
+                    .y = mouse_pos.y + 5,
+                    .width = 115,
+                    .height = 15,
+                };
+
+                GuiLabel(gui_label_help_text_load, "Open File");
+            }
+
+            if ( CheckCollisionPointRec(mouse_pos, gui_button_save_file) ) {
+                // draw help msg for save
+                Rectangle gui_label_help_text_save = {
+                    .x = mouse_pos.x + 15,
+                    .y = mouse_pos.y + 5,
+                    .width = 115,
+                    .height = 15,
+                };
+
+                GuiLabel(gui_label_help_text_save, "Save File");
+            }
+
+            // Draw window for load files
+            if ( gui_show_window_load ) {
+                if ( GuiTextInputBox(gui_textinput_load_save_file, "Open file", "Filepath for open", "Open", mesh_filepath, FILEPATH_MAX_SIZE, false) == 1 ) {
+                    paws_mesh_clear(&mesh);
+
+                    if ( parse_format_obj(mesh_filepath, &mesh) ) {
+                        fprintf(stderr, "[LOAD] Can't open file\n");
+                    }
+
+                    gui_show_window_load = false;
+                }
+            }
+
+            // Draw window for save files
+            if ( gui_show_window_save ) {
+                if ( GuiTextInputBox(gui_textinput_load_save_file, "Save File", "Filepath for save", "Save", mesh_filepath, FILEPATH_MAX_SIZE, false) == 1 ) {
+                    save_format_obj(mesh_filepath, &mesh);
+                    gui_show_window_save = false;
+                }
             }
 
             if ( is_show_settings_window ) {
