@@ -440,11 +440,11 @@ int main() {
                 }
 
                 enum _settings_mode {
-                    VIEW = 0, CAMERA // render
+                    VIEW = 0, CAMERA, OBJECT,
                 };
 
                 static const char* settings_window_mode_text[] = {
-                    "View", "Camera"
+                    "View", "Camera", "Object"
                 };
 
                 static const char* settings_window_camera_mode[] = {
@@ -469,7 +469,16 @@ int main() {
                     .height = 30
                 };
 
+                // Settings object button
+                Rectangle gui_settings_window_object_btn = {
+                    .x = gui_settings_window_camera_btn.x + gui_settings_window_camera_btn.width + 10,
+                    .y = gui_settings_window_camera_btn.y,
+                    .width = 90,
+                    .height = 30
+                };
+
                 // Current settings mode text
+                // NOTE: draw elements from this anchor
                 Rectangle gui_settings_line = {
                     .x = gui_rect_settings_window.x,
                     .y = gui_settings_window_view_btn.y + 50,
@@ -634,12 +643,71 @@ int main() {
                     .height = 130
                 };
 
+                // Inside Object settings
+                // Scale object
+                Rectangle gui_settings_object_line_scaling = {
+                    .x = gui_settings_line.x + 5,
+                    .y = gui_settings_line.y + 20,
+                    .width = 150,
+                    .height = 0,
+                };
+
+                Rectangle gui_settings_object_btn_minus_scale = {
+                    .x = gui_settings_object_line_scaling.x + 10,
+                    .y = gui_settings_object_line_scaling.y + 20,
+                    .width = 40,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_checkbox_manual_scale_value = {
+                    .x = gui_settings_object_btn_minus_scale.x + gui_settings_object_btn_minus_scale.width + 15,
+                    .y = gui_settings_object_btn_minus_scale.y,
+                    .width = 30,
+                    .height = 30,
+                };
+
+                static bool gui_settings_object_ckeckbox_manscale_value = false;
+
+                Rectangle gui_settings_object_valbox_scale = {
+                    .x = gui_settings_object_checkbox_manual_scale_value.x + gui_settings_object_checkbox_manual_scale_value.width + 10,
+                    .y = gui_settings_object_checkbox_manual_scale_value.y,
+                    .width = 90,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_btn_plus_scale = {
+                    .x = gui_settings_object_valbox_scale.x + gui_settings_object_valbox_scale.width + 10,
+                    .y = gui_settings_object_valbox_scale.y,
+                    .width = 40,
+                    .height = 30,
+                };
+
+                static float gui_settings_object_valbox_scale_val = 1;
+
+                Rectangle gui_settings_object_btn_make_scale_up = {
+                    .x = gui_settings_object_btn_plus_scale.x + gui_settings_object_btn_plus_scale.width + 10,
+                    .y = gui_settings_object_btn_plus_scale.y,
+                    .width = 90,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_btn_make_scale_down = {
+                    .x = gui_settings_object_btn_make_scale_up.x + gui_settings_object_btn_make_scale_up.width + 10,
+                    .y = gui_settings_object_btn_make_scale_up.y,
+                    .width = 120,
+                    .height = 30,
+                };
+
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
 
                 if ( GuiButton(gui_settings_window_camera_btn, "Camera") ) {
                     settings_mode = CAMERA;
+                }
+
+                if ( GuiButton(gui_settings_window_object_btn, "Object") ) {
+                    settings_mode = OBJECT;
                 }
 
                 GuiLine(gui_settings_line, settings_window_mode_text[settings_mode]);
@@ -744,6 +812,53 @@ int main() {
                                 }
 
                                 camera.projection = camera_projection_type;
+                            }
+                        }
+                        break;
+                    case OBJECT:
+                        {
+
+                            GuiLine(gui_settings_object_line_scaling, "Scaling");
+
+                            if ( GuiButton(gui_settings_object_btn_minus_scale, "-") ) {
+                                gui_settings_object_valbox_scale_val -= 1;
+                            }
+
+                            GuiCheckBox(gui_settings_object_checkbox_manual_scale_value, 0, &gui_settings_object_ckeckbox_manscale_value);
+
+                            char scale_value_buffer[32] = {0};
+                            sprintf(scale_value_buffer, "%.0f", gui_settings_object_valbox_scale_val);
+                            GuiValueBoxFloat(gui_settings_object_valbox_scale,
+                                             0,
+                                             scale_value_buffer,
+                                             &gui_settings_object_valbox_scale_val,
+                                             gui_settings_object_ckeckbox_manscale_value);
+
+                            if ( GuiButton(gui_settings_object_btn_plus_scale, "+") ) {
+                                gui_settings_object_valbox_scale_val += 1;
+                            }
+
+                            if ( GuiButton(gui_settings_object_btn_make_scale_up, "Scale Up") && mesh.is_loaded ) {
+                                size_t vert_count = cvector_size(mesh.vertices);
+
+                                for (size_t i = 0; i < vert_count; ++i) {
+                                    Vector3* vertex = cvector_at(mesh.vertices, i);
+                                    vertex->x *= gui_settings_object_valbox_scale_val;
+                                    vertex->y *= gui_settings_object_valbox_scale_val;
+                                    vertex->z *= gui_settings_object_valbox_scale_val;
+                                }
+                            }
+
+                            if ( GuiButton(gui_settings_object_btn_make_scale_down, "Scale Down") && mesh.is_loaded ) {
+                                size_t vert_count = cvector_size(mesh.vertices);
+                                float scale_factor = 1 / gui_settings_object_valbox_scale_val;
+
+                                for (size_t i = 0; i < vert_count; ++i) {
+                                    Vector3* vertex = cvector_at(mesh.vertices, i);
+                                    vertex->x *= scale_factor;
+                                    vertex->y *= scale_factor;
+                                    vertex->z *= scale_factor;
+                                }
                             }
                         }
                         break;
