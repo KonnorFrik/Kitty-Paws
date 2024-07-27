@@ -89,7 +89,7 @@ int main() {
     RayCollision ray_collision_drag_axis_y = {0};
     RayCollision ray_collision_drag_axis_z = {0};
 
-    // SetTraceLogLevel(LOG_NONE);
+    SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
     // TODO: add in gui settings text size ( with GuiSpinner)
@@ -100,8 +100,10 @@ int main() {
     while ( !status && !WindowShouldClose() ) {
         // Update anything here ------------------
 
+        Vector2 mouse_pos = GetMousePosition();
+
         if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT) &&
-             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(mouse_pos, gui_rect_settings_window) ) )
         ) {
             UpdateCamera(&camera, CAMERA_THIRD_PERSON);
         }
@@ -114,9 +116,9 @@ int main() {
         }
 
         if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
-            ray_collision_drag_axis_x = GetRayCollisionBox(GetMouseRay(GetMousePosition(), camera), drag_axis_x_focus_points);
-            ray_collision_drag_axis_y = GetRayCollisionBox(GetMouseRay(GetMousePosition(), camera), drag_axis_y_focus_points);
-            ray_collision_drag_axis_z = GetRayCollisionBox(GetMouseRay(GetMousePosition(), camera), drag_axis_z_focus_points);
+            ray_collision_drag_axis_x = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_x_focus_points);
+            ray_collision_drag_axis_y = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_y_focus_points);
+            ray_collision_drag_axis_z = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_z_focus_points);
 
             if ( ray_collision_drag_axis_x.hit ||
                  ray_collision_drag_axis_y.hit ||
@@ -137,11 +139,11 @@ int main() {
 
         // Choose points for modify
         if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mesh.is_loaded && 
-             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) ) &&
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(mouse_pos, gui_rect_settings_window) ) ) &&
              ( !gui_show_window_save ) &&
              ( !gui_show_window_load )
         ) {
-            Ray ray_mouse_point_collision = GetMouseRay(GetMousePosition(), camera);
+            Ray ray_mouse_point_collision = GetMouseRay(mouse_pos, camera);
             float ray_collision_dist_min = INFINITY;
 
             for (size_t vi = 0; vi < cvector_size(mesh.vertices); ++vi) {
@@ -385,9 +387,6 @@ int main() {
                 gui_show_window_load = false;
             }
 
-            // TODO: move to start of loop
-            Vector2 mouse_pos = GetMousePosition();
-
             if ( CheckCollisionPointRec(mouse_pos, gui_button_load_file) ) {
                 // draw help msg for load
                 Rectangle gui_label_help_text_load = {
@@ -485,6 +484,8 @@ int main() {
                     .width = gui_rect_settings_window.width,
                     .height = 0
                 };
+
+                // TODO: move variables into lower scope
 
                 // Inside camera settings
                 // Camera mode switch
