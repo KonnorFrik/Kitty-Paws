@@ -162,7 +162,7 @@ bool save_format_obj(const char* filepath, paws_mesh* mesh) {
     // write 'usemtl ...' TODO: find how to use materials
 
     // write smooth shading
-    fprintf(file, "s %d", mesh->smooth_shade);
+    fprintf(file, "s %d\n", mesh->smooth_shade);
 
     // write all faces
     for (size_t fi = 0; fi < cvector_size(mesh->faces); ++fi) {
