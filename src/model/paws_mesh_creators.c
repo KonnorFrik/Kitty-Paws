@@ -26,6 +26,7 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->settings.point_radius = 0.1;
 
     mesh->name = NULL;
+    mesh->smooth_shade = 0;
 
     if ( !mesh->vertices || 
          !mesh->textures || 
