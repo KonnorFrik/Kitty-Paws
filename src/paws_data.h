@@ -4,7 +4,7 @@
 #ifndef __KITTY_PAWS_DATA_H__
 #define __KITTY_PAWS_DATA_H__
 
-#define KITTY_PAWS_VERSION_STR "0.1.0"
+#define KITTY_PAWS_VERSION_STR "0.2.0"
 
 #include <stddef.h>
 #include <raylib.h>
