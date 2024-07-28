@@ -33,6 +33,11 @@ int main() {
     // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
 
+    if ( !mesh_filepath ) {
+        fprintf(stderr, "[ERROR] Can't allocate memory for filepath\n");
+        status = 1;
+    }
+
     if ( paws_mesh_ctor(&mesh) ) {
         status = 1;
         fprintf(stderr, "[ERROR] Can't Allocate memory for mesh\n");
@@ -73,9 +78,6 @@ int main() {
     // Points focus
     cvector* focus_points = cvector_new(1);
     bool append_focus_points = false;
-    Vector3 normal_x_focus_points = {1, 0, 0};
-    Vector3 normal_y_focus_points = {0, 1, 0};
-    Vector3 normal_z_focus_points = {0, 0, 1};
     Color color_drag_axis_x = RED;
     Color color_drag_axis_y = GREEN;
     Color color_drag_axis_z = BLUE;
@@ -128,9 +130,9 @@ int main() {
 
             } else {
                 drag_axis_collision = false;
-                ray_collision_drag_axis_x = (RayCollision){0}; 
-                ray_collision_drag_axis_y = (RayCollision){0};
-                ray_collision_drag_axis_z = (RayCollision){0};
+                // ray_collision_drag_axis_x = (RayCollision){0}; 
+                // ray_collision_drag_axis_y = (RayCollision){0};
+                // ray_collision_drag_axis_z = (RayCollision){0};
             }
 
         } else if ( IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ) {
@@ -266,7 +268,7 @@ int main() {
             };
         }
 
-        // Move in focus points by dragable axis if hitted anyone 
+        // Move focus points by dragable axis if hitted 
         if ( tmp_size_focus_points && drag_axis_collision &&
              ( !gui_show_window_save ) &&
              ( !gui_show_window_load )
@@ -375,40 +377,36 @@ int main() {
                 .height = 35,
             };
 
+            // Load button
             if ( GuiButton(gui_button_load_file, "#05#") ) {
-                // open file
                 gui_show_window_load = !gui_show_window_load;
                 gui_show_window_save = false;
             }
 
+            // Save button
             if ( GuiButton(gui_button_save_file, "#06#") ) {
-                // save file
                 gui_show_window_save = !gui_show_window_save;
                 gui_show_window_load = false;
             }
 
-            if ( CheckCollisionPointRec(mouse_pos, gui_button_load_file) ) {
-                // draw help msg for load
-                Rectangle gui_label_help_text_load = {
-                    .x = mouse_pos.x + 15,
-                    .y = mouse_pos.y + 5,
-                    .width = 115,
-                    .height = 15,
-                };
+            static Rectangle gui_label_help_text = {
+                .x = 0,
+                .y = 0,
+                .width = 115,
+                .height = 15,
+            };
 
-                GuiLabel(gui_label_help_text_load, "Open File");
+            // Draw help msg for load/save
+            if ( CheckCollisionPointRec(mouse_pos, gui_button_load_file) ) {
+                gui_label_help_text.x = mouse_pos.x + 15;
+                gui_label_help_text.y = mouse_pos.y + 5;
+                GuiLabel(gui_label_help_text, "Open File");
             }
 
             if ( CheckCollisionPointRec(mouse_pos, gui_button_save_file) ) {
-                // draw help msg for save
-                Rectangle gui_label_help_text_save = {
-                    .x = mouse_pos.x + 15,
-                    .y = mouse_pos.y + 5,
-                    .width = 115,
-                    .height = 15,
-                };
-
-                GuiLabel(gui_label_help_text_save, "Save File");
+                gui_label_help_text.x = mouse_pos.x + 15;
+                gui_label_help_text.y = mouse_pos.y + 5;
+                GuiLabel(gui_label_help_text, "Save File");
             }
 
             // Draw window for load files
@@ -432,8 +430,8 @@ int main() {
                 }
             }
 
+            // Draw window with settings controls
             if ( is_show_settings_window ) {
-                // Open settings button
                 if ( GuiWindowBox(gui_rect_settings_window, "Settings") ) {
                     is_show_settings_window = false;
                 }
@@ -450,7 +448,7 @@ int main() {
                     "Default", "Custom"
                 };
 
-                static int settings_mode = VIEW;
+                static enum _settings_mode settings_mode = VIEW;
 
                 // Settings view mode button
                 Rectangle gui_settings_window_view_btn = {
@@ -468,7 +466,7 @@ int main() {
                     .height = 30
                 };
 
-                // Settings object button
+                // Settings object mode button
                 Rectangle gui_settings_window_object_btn = {
                     .x = gui_settings_window_camera_btn.x + gui_settings_window_camera_btn.width + 10,
                     .y = gui_settings_window_camera_btn.y,
@@ -483,220 +481,6 @@ int main() {
                     .y = gui_settings_window_view_btn.y + 50,
                     .width = gui_rect_settings_window.width,
                     .height = 0
-                };
-
-                // TODO: move variables into lower scope
-
-                // Inside camera settings
-                // Camera mode switch
-                Rectangle gui_settings_camera_mode_switch = {
-                    .x = gui_settings_line.x + 10,
-                    .y = gui_settings_line.y + 20,
-                    .width = 30,
-                    .height = 30
-                };
-
-                // Default camera - fovy change
-                Rectangle gui_settings_camera_line_fovy = {
-                    .x = gui_settings_camera_mode_switch.x,
-                    .y = gui_settings_camera_mode_switch.y + gui_settings_camera_mode_switch.height + 20,
-                    .width = 305,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_camera_spinner_fovy = {
-                    .x = gui_settings_camera_line_fovy.x,
-                    .y = gui_settings_camera_line_fovy.y + 15,
-                    .width = 100,
-                    .height = 30
-                };
-
-                static int camera_fovy_min = 20, camera_fovy_max = 120, camera_fovy_value = 45;
-                static bool camera_fovy_is_manual = false;
-
-                // Default camera - fovy change manual input switch
-                Rectangle gui_settings_camera_spinner_fovy_switch = {
-                    .x = gui_settings_camera_spinner_fovy.x + gui_settings_camera_spinner_fovy.width + 55,
-                    .y = gui_settings_camera_spinner_fovy.y,
-                    .width = 30,
-                    .height = 30
-                };
-
-                // Default camera - change projection
-                Rectangle gui_settings_camera_line_projection = {
-                    .x = gui_settings_camera_mode_switch.x,
-                    .y = gui_settings_camera_spinner_fovy.y + gui_settings_camera_spinner_fovy.height + 30,
-                    .width = 180,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_camera_dropbox_projection = {
-                    .x = gui_settings_camera_line_projection.x,
-                    .y = gui_settings_camera_line_projection.y + 15,
-                    .width = 160,
-                    .height = 30
-                };
-
-                // Inside view settings
-                // Point type area
-                Rectangle gui_settings_view_line_point_type = {
-                    .x = gui_rect_settings_window.x + 5,
-                    .y = gui_settings_line.y + 25,
-                    .width = 130,
-                    .height = 0//(3 * 35) + 15, // 3 buttons each with height 30
-                };
-
-                Rectangle gui_settings_view_dropbox_point_type = {
-                    .x = gui_rect_settings_window.x + 15,
-                    .y = gui_settings_view_line_point_type.y + 15,
-                    .width = 110,
-                    .height = 30
-                };
-
-                // Point radius area
-                Rectangle gui_settings_view_line_point_radius = {
-                    .x = gui_settings_view_line_point_type.x + gui_settings_view_line_point_type.width + 15,
-                    .y = gui_settings_view_line_point_type.y,
-                    .width = 170,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_view_slider_point_radius = {
-                    .x = gui_settings_view_line_point_radius.x + 40,
-                    .y = gui_settings_view_line_point_radius.y + 10,
-                    .width = 100,
-                    .height = 30
-                };
-
-                // Point ColorPicker area
-                Rectangle gui_settings_view_line_point_colorpick = {
-                    .x = gui_settings_view_line_point_radius.x + gui_settings_view_line_point_radius.width + 10,
-                    .y = gui_settings_view_line_point_radius.y,
-                    .width = 160,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_view_colorpicker_point = {
-                    .x = gui_settings_view_line_point_colorpick.x,
-                    .y = gui_settings_view_line_point_colorpick.y + 10,
-                    .width = 130,
-                    .height = 130
-                };
-
-                // Draw edges switch area
-                Rectangle gui_settings_view_checkbox_edges = {
-                    .x = gui_settings_view_dropbox_point_type.x,
-                    .y = gui_settings_view_dropbox_point_type.y + 140,
-                    .width = 30,
-                    .height = 30
-                };
-
-                // Edge ColorPicker area
-                Rectangle gui_settings_view_line_edge_colorpick = {
-                    .x = gui_settings_view_line_point_colorpick.x,
-                    .y = gui_settings_view_checkbox_edges.y,
-                    .width = 160,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_view_colorpicker_edge = {
-                    .x = gui_settings_view_line_edge_colorpick.x,
-                    .y = gui_settings_view_line_edge_colorpick.y + 10,
-                    .width = 130,
-                    .height = 130
-                };
-
-                // Draw normals switch area
-                Rectangle gui_settings_view_checkbox_normals = {
-                    .x = gui_settings_view_checkbox_edges.x,
-                    .y = gui_settings_view_checkbox_edges.y + 155,
-                    .width = 30,
-                    .height = 30
-                };
-
-                // Normal ColorPicker area
-                Rectangle gui_settings_view_line_normal_colorpick = {
-                    .x = gui_settings_view_colorpicker_edge.x,
-                    .y = gui_settings_view_checkbox_normals.y,
-                    .width = 160,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_view_colorpicker_normal = {
-                    .x = gui_settings_view_line_normal_colorpick.x,
-                    .y = gui_settings_view_line_normal_colorpick.y + 10,
-                    .width = 130,
-                    .height = 130
-                };
-
-                // Background ColorPicker area
-                Rectangle gui_settings_view_line_background_colorpick = {
-                    .x = gui_settings_view_colorpicker_normal.x - 25,
-                    .y = gui_settings_view_colorpicker_normal.y + gui_settings_view_colorpicker_normal.height + 20,
-                    .width = 160,
-                    .height = 0
-                };
-
-                Rectangle gui_settings_view_colorpicker_background = {
-                    .x = gui_settings_view_colorpicker_normal.x,
-                    .y = gui_settings_view_line_background_colorpick.y + 15,
-                    .width = 130,
-                    .height = 130
-                };
-
-                // Inside Object settings
-                // Scale object
-                Rectangle gui_settings_object_line_scaling = {
-                    .x = gui_settings_line.x + 5,
-                    .y = gui_settings_line.y + 20,
-                    .width = 150,
-                    .height = 0,
-                };
-
-                Rectangle gui_settings_object_btn_minus_scale = {
-                    .x = gui_settings_object_line_scaling.x + 10,
-                    .y = gui_settings_object_line_scaling.y + 20,
-                    .width = 40,
-                    .height = 30,
-                };
-
-                Rectangle gui_settings_object_checkbox_manual_scale_value = {
-                    .x = gui_settings_object_btn_minus_scale.x + gui_settings_object_btn_minus_scale.width + 15,
-                    .y = gui_settings_object_btn_minus_scale.y,
-                    .width = 30,
-                    .height = 30,
-                };
-
-                static bool gui_settings_object_ckeckbox_manscale_value = false;
-
-                Rectangle gui_settings_object_valbox_scale = {
-                    .x = gui_settings_object_checkbox_manual_scale_value.x + gui_settings_object_checkbox_manual_scale_value.width + 10,
-                    .y = gui_settings_object_checkbox_manual_scale_value.y,
-                    .width = 90,
-                    .height = 30,
-                };
-
-                Rectangle gui_settings_object_btn_plus_scale = {
-                    .x = gui_settings_object_valbox_scale.x + gui_settings_object_valbox_scale.width + 10,
-                    .y = gui_settings_object_valbox_scale.y,
-                    .width = 40,
-                    .height = 30,
-                };
-
-                static float gui_settings_object_valbox_scale_val = 1;
-
-                Rectangle gui_settings_object_btn_make_scale_up = {
-                    .x = gui_settings_object_btn_plus_scale.x + gui_settings_object_btn_plus_scale.width + 10,
-                    .y = gui_settings_object_btn_plus_scale.y,
-                    .width = 90,
-                    .height = 30,
-                };
-
-                Rectangle gui_settings_object_btn_make_scale_down = {
-                    .x = gui_settings_object_btn_make_scale_up.x + gui_settings_object_btn_make_scale_up.width + 10,
-                    .y = gui_settings_object_btn_make_scale_up.y,
-                    .width = 120,
-                    .height = 30,
                 };
 
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
@@ -716,6 +500,111 @@ int main() {
                 switch ( settings_mode ) {
                     case VIEW:
                         {
+                            Rectangle gui_settings_view_line_point_type = {
+                                .x = gui_rect_settings_window.x + 5,
+                                .y = gui_settings_line.y + 25,
+                                .width = 130,
+                                .height = 0,
+                            };
+
+                            Rectangle gui_settings_view_dropbox_point_type = {
+                                .x = gui_rect_settings_window.x + 15,
+                                .y = gui_settings_view_line_point_type.y + 15,
+                                .width = 110,
+                                .height = 30
+                            }; 
+
+                            // Point radius area
+                            Rectangle gui_settings_view_line_point_radius = {
+                                .x = gui_settings_view_line_point_type.x + gui_settings_view_line_point_type.width + 15,
+                                .y = gui_settings_view_line_point_type.y,
+                                .width = 170,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_view_slider_point_radius = {
+                                .x = gui_settings_view_line_point_radius.x + 40,
+                                .y = gui_settings_view_line_point_radius.y + 10,
+                                .width = 100,
+                                .height = 30
+                            };
+
+                            // Point ColorPicker area
+                            Rectangle gui_settings_view_line_point_colorpick = {
+                                .x = gui_settings_view_line_point_radius.x + gui_settings_view_line_point_radius.width + 10,
+                                .y = gui_settings_view_line_point_radius.y,
+                                .width = 160,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_view_colorpicker_point = {
+                                .x = gui_settings_view_line_point_colorpick.x,
+                                .y = gui_settings_view_line_point_colorpick.y + 10,
+                                .width = 130,
+                                .height = 130
+                            };
+
+                            // Draw edges switch area
+                            Rectangle gui_settings_view_checkbox_edges = {
+                                .x = gui_settings_view_dropbox_point_type.x,
+                                .y = gui_settings_view_dropbox_point_type.y + 140,
+                                .width = 30,
+                                .height = 30
+                            };
+
+                            // Edge ColorPicker area
+                            Rectangle gui_settings_view_line_edge_colorpick = {
+                                .x = gui_settings_view_line_point_colorpick.x,
+                                .y = gui_settings_view_checkbox_edges.y,
+                                .width = 160,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_view_colorpicker_edge = {
+                                .x = gui_settings_view_line_edge_colorpick.x,
+                                .y = gui_settings_view_line_edge_colorpick.y + 10,
+                                .width = 130,
+                                .height = 130
+                            };
+
+                            // Draw normals switch area
+                            Rectangle gui_settings_view_checkbox_normals = {
+                                .x = gui_settings_view_checkbox_edges.x,
+                                .y = gui_settings_view_checkbox_edges.y + 155,
+                                .width = 30,
+                                .height = 30
+                            };
+
+                            // Normal ColorPicker area
+                            Rectangle gui_settings_view_line_normal_colorpick = {
+                                .x = gui_settings_view_colorpicker_edge.x,
+                                .y = gui_settings_view_checkbox_normals.y,
+                                .width = 160,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_view_colorpicker_normal = {
+                                .x = gui_settings_view_line_normal_colorpick.x,
+                                .y = gui_settings_view_line_normal_colorpick.y + 10,
+                                .width = 130,
+                                .height = 130
+                            };
+
+                            // Background ColorPicker area
+                            Rectangle gui_settings_view_line_background_colorpick = {
+                                .x = gui_settings_view_colorpicker_normal.x - 25,
+                                .y = gui_settings_view_colorpicker_normal.y + gui_settings_view_colorpicker_normal.height + 20,
+                                .width = 160,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_view_colorpicker_background = {
+                                .x = gui_settings_view_colorpicker_normal.x,
+                                .y = gui_settings_view_line_background_colorpick.y + 15,
+                                .width = 130,
+                                .height = 130
+                            };
+
                             GuiLine(gui_settings_view_line_point_type, "Point type");
 
                             // Change point type
@@ -778,8 +667,55 @@ int main() {
 
                     case CAMERA:
                         {
+                            Rectangle gui_settings_camera_mode_switch = {
+                                .x = gui_settings_line.x + 10,
+                                .y = gui_settings_line.y + 20,
+                                .width = 30,
+                                .height = 30
+                            };
+
+                            // Default camera - fovy change
+                            Rectangle gui_settings_camera_line_fovy = {
+                                .x = gui_settings_camera_mode_switch.x,
+                                .y = gui_settings_camera_mode_switch.y + gui_settings_camera_mode_switch.height + 20,
+                                .width = 305,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_camera_spinner_fovy = {
+                                .x = gui_settings_camera_line_fovy.x,
+                                .y = gui_settings_camera_line_fovy.y + 15,
+                                .width = 100,
+                                .height = 30
+                            };
+
+                            // Default camera - fovy change manual input switch
+                            Rectangle gui_settings_camera_spinner_fovy_switch = {
+                                .x = gui_settings_camera_spinner_fovy.x + gui_settings_camera_spinner_fovy.width + 55,
+                                .y = gui_settings_camera_spinner_fovy.y,
+                                .width = 30,
+                                .height = 30
+                            };
+
+                            // Default camera - change projection
+                            Rectangle gui_settings_camera_line_projection = {
+                                .x = gui_settings_camera_mode_switch.x,
+                                .y = gui_settings_camera_spinner_fovy.y + gui_settings_camera_spinner_fovy.height + 30,
+                                .width = 180,
+                                .height = 0
+                            };
+
+                            Rectangle gui_settings_camera_dropbox_projection = {
+                                .x = gui_settings_camera_line_projection.x,
+                                .y = gui_settings_camera_line_projection.y + 15,
+                                .width = 160,
+                                .height = 30
+                            };
+
                             static char camera_mode_buffer[32] = "Camera: Default";
                             static bool settings_camera_is_custom_mode = false;
+                            static int camera_fovy_min = 20, camera_fovy_max = 120, camera_fovy_value = 45;
+                            static bool camera_fovy_is_manual = false;
 
                             // Switch to default/custom camera
                             if ( GuiCheckBox(gui_settings_camera_mode_switch, camera_mode_buffer, &settings_camera_is_custom_mode) ) {
@@ -818,6 +754,57 @@ int main() {
                         break;
                     case OBJECT:
                         {
+                            Rectangle gui_settings_object_line_scaling = {
+                                .x = gui_settings_line.x + 5,
+                                .y = gui_settings_line.y + 20,
+                                .width = 150,
+                                .height = 0,
+                            };
+
+                            Rectangle gui_settings_object_btn_minus_scale = {
+                                .x = gui_settings_object_line_scaling.x + 10,
+                                .y = gui_settings_object_line_scaling.y + 20,
+                                .width = 40,
+                                .height = 30,
+                            };
+
+                            Rectangle gui_settings_object_checkbox_manual_scale_value = {
+                                .x = gui_settings_object_btn_minus_scale.x + gui_settings_object_btn_minus_scale.width + 15,
+                                .y = gui_settings_object_btn_minus_scale.y,
+                                .width = 30,
+                                .height = 30,
+                            };
+
+                            Rectangle gui_settings_object_valbox_scale = {
+                                .x = gui_settings_object_checkbox_manual_scale_value.x + gui_settings_object_checkbox_manual_scale_value.width + 10,
+                                .y = gui_settings_object_checkbox_manual_scale_value.y,
+                                .width = 90,
+                                .height = 30,
+                            };
+
+                            Rectangle gui_settings_object_btn_plus_scale = {
+                                .x = gui_settings_object_valbox_scale.x + gui_settings_object_valbox_scale.width + 10,
+                                .y = gui_settings_object_valbox_scale.y,
+                                .width = 40,
+                                .height = 30,
+                            };
+
+                            Rectangle gui_settings_object_btn_make_scale_up = {
+                                .x = gui_settings_object_btn_plus_scale.x + gui_settings_object_btn_plus_scale.width + 10,
+                                .y = gui_settings_object_btn_plus_scale.y,
+                                .width = 90,
+                                .height = 30,
+                            };
+
+                            Rectangle gui_settings_object_btn_make_scale_down = {
+                                .x = gui_settings_object_btn_make_scale_up.x + gui_settings_object_btn_make_scale_up.width + 10,
+                                .y = gui_settings_object_btn_make_scale_up.y,
+                                .width = 120,
+                                .height = 30,
+                            };
+
+                            static bool gui_settings_object_ckeckbox_manscale_value = false;
+                            static float gui_settings_object_valbox_scale_val = 1;
 
                             GuiLine(gui_settings_object_line_scaling, "Scaling");
 
@@ -876,6 +863,7 @@ int main() {
     CloseWindow();
     paws_mesh_dtor(&mesh);
     cvector_delete(focus_points);
+    free(mesh_filepath);
 
     return status;
 }
