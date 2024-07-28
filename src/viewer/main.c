@@ -1,13 +1,22 @@
 #include "../paws_data.h"
 #include "../raygui_impl/raygui.h"
 #include <raylib.h>
+#include <stdlib.h>
+#include <raymath.h>
 #include <stdio.h>
 
 #define APP_TITLE "Kitty Paws"
+#define DEBUG_PRINT 0
+#define FILEPATH_MAX_SIZE 1024
 
 // TODO: write func for draw gui
 // for mesh settings: args - ptr to mesh
 // for camera: ptr to default camera, ptr to custom camera
+
+void paws_mesh_clear(paws_mesh* mesh) {
+    paws_mesh_dtor(mesh);
+    paws_mesh_ctor(mesh);
+}
 
 int main() {
     // Initialize anything here
@@ -18,7 +27,8 @@ int main() {
     int target_fps = 60;
 
     // hardcoded value for testing
-    char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
+    char* mesh_filepath = calloc(FILEPATH_MAX_SIZE, sizeof(char));
+    // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/cube/cube.obj";
     // char* mesh_filepath = "test.obj";
     // char* mesh_filepath = "/home/konnor/code/c/graphics/3d_objects/notebook_1/Lowpoly_Notebook_2.obj";
     paws_mesh mesh = {0};
@@ -26,10 +36,6 @@ int main() {
     if ( paws_mesh_ctor(&mesh) ) {
         status = 1;
         fprintf(stderr, "[ERROR] Can't Allocate memory for mesh\n");
-    }
-
-    if ( parse_format_obj(mesh_filepath, &mesh) ) {
-        // error placeholdor
     }
 
     Color color_background = WHITE;
@@ -44,6 +50,7 @@ int main() {
 
     // GUI variables
     bool is_show_settings_window = false;
+
     // Settings button
     Rectangle gui_rect_settings_button = {0, 0, 95, 35};
     gui_rect_settings_button.x = screen_width - gui_rect_settings_button.width;
@@ -52,18 +59,247 @@ int main() {
     Rectangle gui_rect_settings_window = {0, 0, 500, screen_height};
     gui_rect_settings_window.x = screen_width - gui_rect_settings_window.width;
 
-    // SetTraceLogLevel(LOG_NONE);
+    // Save/Load windows
+    bool gui_show_window_load = false;
+    bool gui_show_window_save = false;
+
+    static Rectangle gui_textinput_load_save_file = {
+        .x = 50,
+        .y = 30,
+        .width = 450,
+        .height = 130,
+    };
+
+    // Points focus
+    cvector* focus_points = cvector_new(1);
+    bool append_focus_points = false;
+    Vector3 normal_x_focus_points = {1, 0, 0};
+    Vector3 normal_y_focus_points = {0, 1, 0};
+    Vector3 normal_z_focus_points = {0, 0, 1};
+    Color color_drag_axis_x = RED;
+    Color color_drag_axis_y = GREEN;
+    Color color_drag_axis_z = BLUE;
+    BoundingBox drag_axis_x_focus_points = {0};
+    BoundingBox drag_axis_y_focus_points = {0};
+    BoundingBox drag_axis_z_focus_points = {0};
+    float drag_axis_size = 1.0f;
+    float drag_axis_sub_size = drag_axis_size / 40;
+    bool drag_axis_collision = false;
+    RayCollision ray_collision_drag_axis_x = {0};
+    RayCollision ray_collision_drag_axis_y = {0};
+    RayCollision ray_collision_drag_axis_z = {0};
+
+    SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, APP_TITLE);
+    // TODO: add in gui settings text size ( with GuiSpinner)
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    GuiSetIconScale(2);
     SetTargetFPS(target_fps);
 
     while ( !status && !WindowShouldClose() ) {
         // Update anything here ------------------
-        if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
-             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(GetMousePosition(), gui_rect_settings_window) ) )
+
+        Vector2 mouse_pos = GetMousePosition();
+
+        if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT) &&
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(mouse_pos, gui_rect_settings_window) ) )
         ) {
             UpdateCamera(&camera, CAMERA_THIRD_PERSON);
+        }
+
+        if ( IsKeyPressed(KEY_LEFT_CONTROL) ) {
+            append_focus_points = true;
+
+        } else if ( IsKeyReleased(KEY_LEFT_CONTROL) ) {
+            append_focus_points = false;
+        }
+
+        if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
+            ray_collision_drag_axis_x = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_x_focus_points);
+            ray_collision_drag_axis_y = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_y_focus_points);
+            ray_collision_drag_axis_z = GetRayCollisionBox(GetMouseRay(mouse_pos, camera), drag_axis_z_focus_points);
+
+            if ( ray_collision_drag_axis_x.hit ||
+                 ray_collision_drag_axis_y.hit ||
+                 ray_collision_drag_axis_z.hit
+            ) {
+                drag_axis_collision = true;
+
+            } else {
+                drag_axis_collision = false;
+                ray_collision_drag_axis_x = (RayCollision){0}; 
+                ray_collision_drag_axis_y = (RayCollision){0};
+                ray_collision_drag_axis_z = (RayCollision){0};
+            }
+
+        } else if ( IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ) {
+            drag_axis_collision = false;
+        }
+
+        // Choose points for modify
+        if ( IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mesh.is_loaded && 
+             ( !is_show_settings_window || ( is_show_settings_window && !CheckCollisionPointRec(mouse_pos, gui_rect_settings_window) ) ) &&
+             ( !gui_show_window_save ) &&
+             ( !gui_show_window_load )
+        ) {
+            Ray ray_mouse_point_collision = GetMouseRay(mouse_pos, camera);
+            float ray_collision_dist_min = INFINITY;
+
+            for (size_t vi = 0; vi < cvector_size(mesh.vertices); ++vi) {
+                Vector3* check_point = cvector_at(mesh.vertices, vi);
+                RayCollision ray_collision = {0};
+
+                switch ( mesh.settings.point_type ) {
+                    case SPHERE:
+                        {
+                            ray_collision = GetRayCollisionSphere(ray_mouse_point_collision, *check_point, mesh.settings.point_radius);
+                            if ( ray_collision.hit ) {
+                                #if DEBUG_PRINT == 1
+                                printf("[FOCUS]: Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("[FOCUS]: Nearest dist: %.3f\n", ray_collision.distance);
+                                #endif
+                            }
+                        }
+                        break;
+                    case CUBE:
+                        {
+                            // TODO: rewrite for check box collision
+                            ray_collision = GetRayCollisionSphere(ray_mouse_point_collision, *check_point, mesh.settings.point_radius);
+                            if ( ray_collision.hit ) {
+                                #if DEBUG_PRINT == 1
+                                printf("[FOCUS]: Nearest hit point: X:%.2f Y:%.2f Z:%.2f\n", ray_collision.point.x, ray_collision.point.y, ray_collision.point.z);
+                                printf("[FOCUS]: Nearest dist: %.3f\n", ray_collision.distance);
+                                #endif
+                            }
+                        }
+                        break;
+
+                    default: break;
+                }
+
+                // Focus only hitted by ray nearest point
+                if ( ray_collision.hit && ray_collision.distance < ray_collision_dist_min ) {
+                    if ( !isinf(ray_collision_dist_min) ) { // not inf = collision was occurred before in same loop
+                        cvector_pop_back(focus_points);
+                    }
+
+                    ray_collision_dist_min = ray_collision.distance;
+
+                    if ( !append_focus_points ) {
+                        cvector_clear(focus_points);
+                    }
+
+                    if ( !cvector_contain(focus_points, check_point) ) {
+                        cvector_push_back(focus_points, check_point);
+                    }
+
+                }
+            }
+
+            // if don't hit anything interactive, clear points in focus
+            if ( isinf(ray_collision_dist_min) &&
+                 !ray_collision_drag_axis_x.hit &&
+                 !ray_collision_drag_axis_y.hit &&
+                 !ray_collision_drag_axis_z.hit &&
+                 !append_focus_points
+            ) {
+                cvector_clear(focus_points);
+            }
+
+            #if DEBUG_PRINT == 1
+            printf("[FOCUS]: Points in focus: %lu\n", cvector_size(focus_points));
+            #endif
+        }
+
+        float tmp_size_focus_points = cvector_size(focus_points);
+        Vector3 mid_focus_points = {0};
+
+        // Calculate middle point of chosen vertices and xyz axis
+        if ( tmp_size_focus_points ) {
+            for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                Vector3* point = cvector_at(focus_points, i);
+                mid_focus_points.x += point->x;
+                mid_focus_points.y += point->y;
+                mid_focus_points.z += point->z;
+            }
+
+            mid_focus_points.x /= tmp_size_focus_points;
+            mid_focus_points.y /= tmp_size_focus_points;
+            mid_focus_points.z /= tmp_size_focus_points;
+
+            // Calculate dragable axis
+            drag_axis_x_focus_points.min = (Vector3){
+                .x = mid_focus_points.x,
+                .y = mid_focus_points.y - drag_axis_sub_size,
+                .z = mid_focus_points.z - drag_axis_sub_size,
+            };
+
+            drag_axis_x_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_size,
+                .y = mid_focus_points.y + drag_axis_sub_size,
+                .z = mid_focus_points.z + drag_axis_sub_size,
+            };
+
+            drag_axis_y_focus_points.min = (Vector3){
+                .x = mid_focus_points.x - drag_axis_sub_size,
+                .y = mid_focus_points.y,
+                .z = mid_focus_points.z - drag_axis_sub_size,
+            };
+
+            drag_axis_y_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_sub_size,
+                .y = mid_focus_points.y + drag_axis_size,
+                .z = mid_focus_points.z + drag_axis_sub_size,
+            };
+
+            drag_axis_z_focus_points.min = (Vector3){
+                .x = mid_focus_points.x - drag_axis_sub_size,
+                .y = mid_focus_points.y - drag_axis_sub_size,
+                .z = mid_focus_points.z,
+            };
+
+            drag_axis_z_focus_points.max = (Vector3){
+                .x = mid_focus_points.x + drag_axis_sub_size,
+                .y = mid_focus_points.y + drag_axis_sub_size,
+                .z = mid_focus_points.z + drag_axis_size,
+            };
+        }
+
+        // Move in focus points by dragable axis if hitted anyone 
+        if ( tmp_size_focus_points && drag_axis_collision &&
+             ( !gui_show_window_save ) &&
+             ( !gui_show_window_load )
+        ) {
+            Vector2 mouse_delta = GetMouseDelta();
+            float move_point_speed_x = mouse_delta.x / 100;
+            float move_point_speed_y = mouse_delta.y / 100;
+            #if DEBUG_PRINT == 1
+            printf("Delta for x: %f\n", mouse_delta.x);
+            printf("Delta for y: %f\n", mouse_delta.y);
+            printf("Speed for x: %f\n", move_point_speed_x);
+            printf("Speed for y: %f\n", move_point_speed_y);
+            printf("\n");
+            #endif
+
+            if ( ray_collision_drag_axis_x.hit ) {
+                for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                    Vector3* point = cvector_at(focus_points, i);
+                    point->x += move_point_speed_x;
+                }
+
+            } else if ( ray_collision_drag_axis_y.hit ) {
+                for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                    Vector3* point = cvector_at(focus_points, i);
+                    point->y -= move_point_speed_y;
+                }
+
+            } else if ( ray_collision_drag_axis_z.hit ) {
+                for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                    Vector3* point = cvector_at(focus_points, i);
+                    point->z += (-move_point_speed_x + move_point_speed_y) / 1.5;
+                }
+            }
         }
 
         // Draw gui at position relative to window width && height
@@ -82,7 +318,6 @@ int main() {
 
         if ( (height_diff = tmp_screen_height - screen_height) ) {
             screen_height = tmp_screen_height;
-
             gui_rect_settings_window.height = screen_height;
         }
 
@@ -97,6 +332,23 @@ int main() {
                 if ( mesh.is_loaded ) {
                     draw_mesh(&mesh);
                 }
+
+                // Draw chosen vertices
+                if ( tmp_size_focus_points > 1 ) {
+                    for (size_t i = 0; i < tmp_size_focus_points; ++i) {
+                        DrawSphere(*(Vector3*)cvector_at(focus_points, i), mesh.settings.point_radius, GOLD);
+                    }
+                }
+
+                if ( tmp_size_focus_points ) {
+                    DrawSphere(mid_focus_points, mesh.settings.point_radius, GRAY);
+
+                    // Draw dragable axis
+                    DrawBoundingBox(drag_axis_x_focus_points, color_drag_axis_x);
+                    DrawBoundingBox(drag_axis_y_focus_points, color_drag_axis_y);
+                    DrawBoundingBox(drag_axis_z_focus_points, color_drag_axis_z);
+                }
+
             }
             EndMode3D();
 
@@ -109,6 +361,77 @@ int main() {
                 is_show_settings_window = !is_show_settings_window;
             }
 
+            Rectangle gui_button_load_file = {
+                .x = 5,
+                .y = 30,
+                .width = 35,
+                .height = 35,
+            };
+
+            Rectangle gui_button_save_file = {
+                .x = gui_button_load_file.x,
+                .y = gui_button_load_file.y + gui_button_load_file.height + 5,
+                .width = 35,
+                .height = 35,
+            };
+
+            if ( GuiButton(gui_button_load_file, "#05#") ) {
+                // open file
+                gui_show_window_load = !gui_show_window_load;
+                gui_show_window_save = false;
+            }
+
+            if ( GuiButton(gui_button_save_file, "#06#") ) {
+                // save file
+                gui_show_window_save = !gui_show_window_save;
+                gui_show_window_load = false;
+            }
+
+            if ( CheckCollisionPointRec(mouse_pos, gui_button_load_file) ) {
+                // draw help msg for load
+                Rectangle gui_label_help_text_load = {
+                    .x = mouse_pos.x + 15,
+                    .y = mouse_pos.y + 5,
+                    .width = 115,
+                    .height = 15,
+                };
+
+                GuiLabel(gui_label_help_text_load, "Open File");
+            }
+
+            if ( CheckCollisionPointRec(mouse_pos, gui_button_save_file) ) {
+                // draw help msg for save
+                Rectangle gui_label_help_text_save = {
+                    .x = mouse_pos.x + 15,
+                    .y = mouse_pos.y + 5,
+                    .width = 115,
+                    .height = 15,
+                };
+
+                GuiLabel(gui_label_help_text_save, "Save File");
+            }
+
+            // Draw window for load files
+            if ( gui_show_window_load ) {
+                if ( GuiTextInputBox(gui_textinput_load_save_file, "Open file", "Filepath for open", "Open", mesh_filepath, FILEPATH_MAX_SIZE, false) == 1 ) {
+                    paws_mesh_clear(&mesh);
+
+                    if ( parse_format_obj(mesh_filepath, &mesh) ) {
+                        fprintf(stderr, "[LOAD] Can't open file\n");
+                    }
+
+                    gui_show_window_load = false;
+                }
+            }
+
+            // Draw window for save files
+            if ( gui_show_window_save ) {
+                if ( GuiTextInputBox(gui_textinput_load_save_file, "Save File", "Filepath for save", "Save", mesh_filepath, FILEPATH_MAX_SIZE, false) == 1 ) {
+                    save_format_obj(mesh_filepath, &mesh);
+                    gui_show_window_save = false;
+                }
+            }
+
             if ( is_show_settings_window ) {
                 // Open settings button
                 if ( GuiWindowBox(gui_rect_settings_window, "Settings") ) {
@@ -116,11 +439,11 @@ int main() {
                 }
 
                 enum _settings_mode {
-                    VIEW = 0, CAMERA // render
+                    VIEW = 0, CAMERA, OBJECT,
                 };
 
                 static const char* settings_window_mode_text[] = {
-                    "View", "Camera"
+                    "View", "Camera", "Object"
                 };
 
                 static const char* settings_window_camera_mode[] = {
@@ -145,13 +468,24 @@ int main() {
                     .height = 30
                 };
 
+                // Settings object button
+                Rectangle gui_settings_window_object_btn = {
+                    .x = gui_settings_window_camera_btn.x + gui_settings_window_camera_btn.width + 10,
+                    .y = gui_settings_window_camera_btn.y,
+                    .width = 90,
+                    .height = 30
+                };
+
                 // Current settings mode text
+                // NOTE: draw elements from this anchor
                 Rectangle gui_settings_line = {
                     .x = gui_rect_settings_window.x,
                     .y = gui_settings_window_view_btn.y + 50,
                     .width = gui_rect_settings_window.width,
                     .height = 0
                 };
+
+                // TODO: move variables into lower scope
 
                 // Inside camera settings
                 // Camera mode switch
@@ -169,12 +503,14 @@ int main() {
                     .width = 305,
                     .height = 0
                 };
+
                 Rectangle gui_settings_camera_spinner_fovy = {
                     .x = gui_settings_camera_line_fovy.x,
                     .y = gui_settings_camera_line_fovy.y + 15,
                     .width = 100,
                     .height = 30
                 };
+
                 static int camera_fovy_min = 20, camera_fovy_max = 120, camera_fovy_value = 45;
                 static bool camera_fovy_is_manual = false;
 
@@ -193,6 +529,7 @@ int main() {
                     .width = 180,
                     .height = 0
                 };
+
                 Rectangle gui_settings_camera_dropbox_projection = {
                     .x = gui_settings_camera_line_projection.x,
                     .y = gui_settings_camera_line_projection.y + 15,
@@ -208,6 +545,7 @@ int main() {
                     .width = 130,
                     .height = 0//(3 * 35) + 15, // 3 buttons each with height 30
                 };
+
                 Rectangle gui_settings_view_dropbox_point_type = {
                     .x = gui_rect_settings_window.x + 15,
                     .y = gui_settings_view_line_point_type.y + 15,
@@ -222,6 +560,7 @@ int main() {
                     .width = 170,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_slider_point_radius = {
                     .x = gui_settings_view_line_point_radius.x + 40,
                     .y = gui_settings_view_line_point_radius.y + 10,
@@ -236,6 +575,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_point = {
                     .x = gui_settings_view_line_point_colorpick.x,
                     .y = gui_settings_view_line_point_colorpick.y + 10,
@@ -258,6 +598,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_edge = {
                     .x = gui_settings_view_line_edge_colorpick.x,
                     .y = gui_settings_view_line_edge_colorpick.y + 10,
@@ -280,6 +621,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_normal = {
                     .x = gui_settings_view_line_normal_colorpick.x,
                     .y = gui_settings_view_line_normal_colorpick.y + 10,
@@ -294,6 +636,7 @@ int main() {
                     .width = 160,
                     .height = 0
                 };
+
                 Rectangle gui_settings_view_colorpicker_background = {
                     .x = gui_settings_view_colorpicker_normal.x,
                     .y = gui_settings_view_line_background_colorpick.y + 15,
@@ -301,11 +644,71 @@ int main() {
                     .height = 130
                 };
 
+                // Inside Object settings
+                // Scale object
+                Rectangle gui_settings_object_line_scaling = {
+                    .x = gui_settings_line.x + 5,
+                    .y = gui_settings_line.y + 20,
+                    .width = 150,
+                    .height = 0,
+                };
+
+                Rectangle gui_settings_object_btn_minus_scale = {
+                    .x = gui_settings_object_line_scaling.x + 10,
+                    .y = gui_settings_object_line_scaling.y + 20,
+                    .width = 40,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_checkbox_manual_scale_value = {
+                    .x = gui_settings_object_btn_minus_scale.x + gui_settings_object_btn_minus_scale.width + 15,
+                    .y = gui_settings_object_btn_minus_scale.y,
+                    .width = 30,
+                    .height = 30,
+                };
+
+                static bool gui_settings_object_ckeckbox_manscale_value = false;
+
+                Rectangle gui_settings_object_valbox_scale = {
+                    .x = gui_settings_object_checkbox_manual_scale_value.x + gui_settings_object_checkbox_manual_scale_value.width + 10,
+                    .y = gui_settings_object_checkbox_manual_scale_value.y,
+                    .width = 90,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_btn_plus_scale = {
+                    .x = gui_settings_object_valbox_scale.x + gui_settings_object_valbox_scale.width + 10,
+                    .y = gui_settings_object_valbox_scale.y,
+                    .width = 40,
+                    .height = 30,
+                };
+
+                static float gui_settings_object_valbox_scale_val = 1;
+
+                Rectangle gui_settings_object_btn_make_scale_up = {
+                    .x = gui_settings_object_btn_plus_scale.x + gui_settings_object_btn_plus_scale.width + 10,
+                    .y = gui_settings_object_btn_plus_scale.y,
+                    .width = 90,
+                    .height = 30,
+                };
+
+                Rectangle gui_settings_object_btn_make_scale_down = {
+                    .x = gui_settings_object_btn_make_scale_up.x + gui_settings_object_btn_make_scale_up.width + 10,
+                    .y = gui_settings_object_btn_make_scale_up.y,
+                    .width = 120,
+                    .height = 30,
+                };
+
                 if ( GuiButton(gui_settings_window_view_btn, "View") ) {
                     settings_mode = VIEW;
                 }
+
                 if ( GuiButton(gui_settings_window_camera_btn, "Camera") ) {
                     settings_mode = CAMERA;
+                }
+
+                if ( GuiButton(gui_settings_window_object_btn, "Object") ) {
+                    settings_mode = OBJECT;
                 }
 
                 GuiLine(gui_settings_line, settings_window_mode_text[settings_mode]);
@@ -328,13 +731,13 @@ int main() {
                             }
 
                             switch ( dropbox_chosen ) {
-                                case 0: // None
+                                case 0:
                                     mesh.settings.point_type = NONE;
                                     break;
-                                case 1: // Sphere
+                                case 1:
                                     mesh.settings.point_type = SPHERE;
                                     break;
-                                case 2: // Cube
+                                case 2:
                                     mesh.settings.point_type = CUBE;
                                     break;
                                 default: break;
@@ -389,9 +792,11 @@ int main() {
                             } else {
                                 // Default settings here
                                 GuiLine(gui_settings_camera_line_fovy, "fovY");
+
                                 // Change camera fovy
                                 GuiSpinner(gui_settings_camera_spinner_fovy, 0, &camera_fovy_value, camera_fovy_min, camera_fovy_max, camera_fovy_is_manual);
                                 camera.fovy = camera_fovy_value;
+
                                 // Switch to manual input camera fovy
                                 GuiCheckBox(gui_settings_camera_spinner_fovy_switch, "Manual input", &camera_fovy_is_manual);
 
@@ -399,10 +804,62 @@ int main() {
                                 static int camera_projection_type = 0; // perspective
                                 static bool camera_projection_dropbox_mode = false;
                                 GuiLine(gui_settings_camera_line_projection, "Projection Type");
-                                if ( GuiDropdownBox(gui_settings_camera_dropbox_projection, "Perspective;Orthographic", &camera_projection_type, camera_projection_dropbox_mode) ) {
+
+                                if ( GuiDropdownBox(gui_settings_camera_dropbox_projection,
+                                                    "Perspective;Orthographic",
+                                                    &camera_projection_type, camera_projection_dropbox_mode)
+                                ) {
                                     camera_projection_dropbox_mode = !camera_projection_dropbox_mode;
                                 }
+
                                 camera.projection = camera_projection_type;
+                            }
+                        }
+                        break;
+                    case OBJECT:
+                        {
+
+                            GuiLine(gui_settings_object_line_scaling, "Scaling");
+
+                            if ( GuiButton(gui_settings_object_btn_minus_scale, "-") ) {
+                                gui_settings_object_valbox_scale_val -= 1;
+                            }
+
+                            GuiCheckBox(gui_settings_object_checkbox_manual_scale_value, 0, &gui_settings_object_ckeckbox_manscale_value);
+
+                            char scale_value_buffer[32] = {0};
+                            sprintf(scale_value_buffer, "%.0f", gui_settings_object_valbox_scale_val);
+                            GuiValueBoxFloat(gui_settings_object_valbox_scale,
+                                             0,
+                                             scale_value_buffer,
+                                             &gui_settings_object_valbox_scale_val,
+                                             gui_settings_object_ckeckbox_manscale_value);
+
+                            if ( GuiButton(gui_settings_object_btn_plus_scale, "+") ) {
+                                gui_settings_object_valbox_scale_val += 1;
+                            }
+
+                            if ( GuiButton(gui_settings_object_btn_make_scale_up, "Scale Up") && mesh.is_loaded ) {
+                                size_t vert_count = cvector_size(mesh.vertices);
+
+                                for (size_t i = 0; i < vert_count; ++i) {
+                                    Vector3* vertex = cvector_at(mesh.vertices, i);
+                                    vertex->x *= gui_settings_object_valbox_scale_val;
+                                    vertex->y *= gui_settings_object_valbox_scale_val;
+                                    vertex->z *= gui_settings_object_valbox_scale_val;
+                                }
+                            }
+
+                            if ( GuiButton(gui_settings_object_btn_make_scale_down, "Scale Down") && mesh.is_loaded ) {
+                                size_t vert_count = cvector_size(mesh.vertices);
+                                float scale_factor = 1 / gui_settings_object_valbox_scale_val;
+
+                                for (size_t i = 0; i < vert_count; ++i) {
+                                    Vector3* vertex = cvector_at(mesh.vertices, i);
+                                    vertex->x *= scale_factor;
+                                    vertex->y *= scale_factor;
+                                    vertex->z *= scale_factor;
+                                }
                             }
                         }
                         break;
@@ -417,12 +874,8 @@ int main() {
 
     // Deinitialize anything here
     CloseWindow();
-
-    // if ( save_format_obj("test.obj", &mesh) ) {
-    //     fprintf(stderr, "[ERROR] Can't save file: --\n");
-    // }
-
     paws_mesh_dtor(&mesh);
+    cvector_delete(focus_points);
 
     return status;
 }

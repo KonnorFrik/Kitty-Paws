@@ -26,6 +26,7 @@ bool paws_mesh_ctor(paws_mesh* mesh) {
     mesh->settings.point_radius = 0.1;
 
     mesh->name = NULL;
+    mesh->smooth_shade = 0;
 
     if ( !mesh->vertices || 
          !mesh->textures || 
@@ -66,4 +67,6 @@ void paws_mesh_dtor(paws_mesh* mesh) {
     cvector_delete(mesh->textures);
     cvector_delete(mesh->normals);
     cvector_delete(mesh->faces);
+
+    mesh->is_loaded = false;
 }

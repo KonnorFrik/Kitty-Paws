@@ -4,7 +4,7 @@
 #ifndef __KITTY_PAWS_DATA_H__
 #define __KITTY_PAWS_DATA_H__
 
-#define KITTY_PAWS_VERSION_STR "0.1.0"
+#define KITTY_PAWS_VERSION_STR "0.2.0"
 
 #include <stddef.h>
 #include <raylib.h>
@@ -27,6 +27,7 @@ typedef struct _paws_mesh {
     cvector* textures;     ///< Contains pointers to Vector2
     cvector* normals;      ///< Contains pointers to Vector3
     cvector* faces;        ///< Contains pointers to cvector with pointers to paws_face_indeces
+    int smooth_shade;     ///< Shooth shading value from 
     bool is_loaded;        ///< Is mesh loaded from file and ready or not
     bool is_draw_normals;  ///< Is need to draw normals
     bool is_draw_textures; ///< Is need to draw textures
