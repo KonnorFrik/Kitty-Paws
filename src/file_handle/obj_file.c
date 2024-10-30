@@ -81,9 +81,9 @@ bool parse_format_obj(const char* filepath, paws_mesh* mesh) {
                 status = format_obj_parse_o(line_copy, mesh);
                 break;
 
-            case S_CODE:
-                status = format_obj_parse_s(line_copy, mesh);
-                break;
+            // case S_CODE:
+            //     status = format_obj_parse_s(line_copy, mesh);
+            //     break;
 
             default: break;
 
